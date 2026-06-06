@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MAHASISWA
+  DOSEN
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique // Berfungsi sebagai NIM/NIDN/NIP
+  password  String
+  name      String
+  role      Role
+  createdAt DateTime @default(now())
+  
+  mahasiswa Mahasiswa?
+  dosen     Dosen?
+}
+
+model Mahasiswa {
+  id           String @id @default(cuid())
+  userId       String @unique
+  nim          String @unique
+  name         String
+  fakultas     String?
+  programStudi String?
+  user         User   @relation(fields: [userId], references: [id])
+  
+  enrollments  Enrollment[]
+}
+
+model Dosen {
+  id     String @id @default(cuid())
+  userId String @unique
+  nidn   String @unique
+  name   String
+  user   User   @relation(fields: [userId], references: [id])
+  
+  kelas  Kelas[]
+}
+
+model MataKuliah {
+  id       String @id @default(cuid())
+  kodeMk   String @unique
+  namaMk   String
+  sks      Int
+  semester Int?
+  
+  kelas    Kelas[]
+}
+
+model Kelas {
+  id                   String @id @default(cuid())
+  mataKuliahId         String
+  dosenId              String
+  namaKelas            String // A, B, C, dsb
+  kuotaReguler         Int    @default(0)
+  jumlahAmbilReguler   Int    @default(0)
+  
+  mataKuliah           MataKuliah @relation(fields: [mataKuliahId], references: [id])
+  dosen                Dosen      @relation(fields: [dosenId], references: [id])
+  enrollments          Enrollment[]
+  
+  @@unique([mataKuliahId, namaKelas])
+}
+
+model Enrollment {
+  id               String @id @default(cuid())
+  mahasiswaId      String
+  kelasId          String
+  
+  nilaiTugas       Float?
+  nilaiUts         Float?
+  nilaiUas         Float?
+  nilaiPartisipasi Float?
+  nilaiProyek      Float?
+  nilaiAkhir       Float?
+  huruf            String?
+  
+  mahasiswa        Mahasiswa @relation(fields: [mahasiswaId], references: [id])
+  kelas            Kelas     @relation(fields: [kelasId], references: [id])
+  
+  @@unique([mahasiswaId, kelasId])
+}
