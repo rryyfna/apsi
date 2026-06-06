@@ -16,12 +16,41 @@ export async function getAdminDashboardData() {
   const totalDosen = await db.dosen.count();
   const totalMataKuliah = await db.mataKuliah.count();
   const totalKelas = await db.kelas.count();
+  const allMahasiswa = await db.mahasiswa.findMany({ select: { nim: true } });
+  const angkatanCount: Record<string, number> = {};
+  allMahasiswa.forEach(m => {
+    let angkatan = "Lainnya";
+    if (m.nim && m.nim.length >= 5) {
+      angkatan = "20" + m.nim.substring(3, 5);
+    }
+    angkatanCount[angkatan] = (angkatanCount[angkatan] || 0) + 1;
+  });
+  const angkatanDistribution = Object.keys(angkatanCount).map(k => ({ angkatan: k, count: angkatanCount[k] })).sort((a, b) => a.angkatan.localeCompare(b.angkatan));
+
+  const allClasses = await db.kelas.findMany({
+    include: {
+      mataKuliah: true,
+      _count: { select: { enrollments: true } }
+    }
+  });
+
+  const courseCount: Record<string, number> = {};
+  allClasses.forEach(c => {
+    const name = c.mataKuliah.namaMk;
+    courseCount[name] = (courseCount[name] || 0) + c._count.enrollments;
+  });
+  const courseEnrollments = Object.keys(courseCount)
+    .map(k => ({ course: k, students: courseCount[k] }))
+    .sort((a, b) => b.students - a.students)
+    .slice(0, 10);
 
   return {
     totalMahasiswa,
     totalDosen,
     totalMataKuliah,
-    totalKelas
+    totalKelas,
+    angkatanDistribution,
+    courseEnrollments
   };
 }
 

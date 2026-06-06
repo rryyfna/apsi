@@ -1,5 +1,6 @@
 import { getMahasiswaDashboardData } from '@/app/actions/mahasiswa';
-import { FileText, Printer } from 'lucide-react';
+import { FileText } from 'lucide-react';
+import PrintPDFButton from '@/app/components/PrintPDFButton';
 import { db } from '@/lib/db';
 import { headers } from 'next/headers';
 
@@ -26,14 +27,11 @@ export default async function KHSPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-800">Kartu Hasil Studi (KHS)</h1>
-        <button className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-semibold flex items-center shadow-sm transition-colors">
-          <Printer className="w-4 h-4 mr-2" />
-          Cetak KHS
-        </button>
+        <PrintPDFButton targetId="khs-document" fileName={`KHS_${mahasiswa.nim}`} />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-100 bg-blue-600 text-white flex justify-between items-center">
+      <div id="khs-document" className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-2">
+        <div className="px-6 py-5 border-b border-gray-100 bg-blue-600 text-white flex justify-between items-center rounded-t-lg">
           <div>
             <h3 className="text-lg font-bold">Transkrip Nilai Sementara</h3>
             <p className="text-blue-100 text-sm">{mahasiswa.name} ({mahasiswa.nim})</p>

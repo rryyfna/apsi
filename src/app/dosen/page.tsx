@@ -1,5 +1,6 @@
 import { getDosenDashboardData } from '@/app/actions/dosen';
-import { Users, BookOpen } from 'lucide-react';
+import { Users, BookOpen, PieChart as PieChartIcon } from 'lucide-react';
+import GradeDistributionChart from '@/app/components/mahasiswa/GradeDistributionChart';
 
 export default async function DosenDashboard() {
   const data = await getDosenDashboardData();
@@ -44,8 +45,18 @@ export default async function DosenDashboard() {
         </div>
       </div>
 
-      {/* Daftar Kelas */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Distribusi Nilai (Pie Chart) */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-1">
+          <div className="flex items-center mb-4">
+            <PieChartIcon className="w-5 h-5 text-gray-500 mr-2" />
+            <h3 className="text-lg font-bold text-gray-800">Sebaran Nilai</h3>
+          </div>
+          <GradeDistributionChart data={data.gradeDistribution} />
+        </div>
+
+        {/* Daftar Kelas */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
         <div className="px-6 py-4 border-b border-gray-100">
           <h3 className="text-lg font-bold text-gray-800">Daftar Kelas Semester Ini</h3>
         </div>
@@ -79,6 +90,7 @@ export default async function DosenDashboard() {
               )}
             </tbody>
           </table>
+        </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,8 @@
 import { getAdminDashboardData } from '@/app/actions/admin';
-import { Users, GraduationCap, BookOpen, Layers } from 'lucide-react';
+import { Users, GraduationCap, BookOpen, Layers, PieChart as PieChartIcon, BarChart3 } from 'lucide-react';
+import AngkatanDistributionChart from '@/app/components/admin/AngkatanDistributionChart';
+import CourseEnrollmentChart from '@/app/components/admin/CourseEnrollmentChart';
+import PrintPDFButton from '@/app/components/PrintPDFButton';
 
 export default async function AdminDashboard() {
   const data = await getAdminDashboardData();
@@ -7,12 +10,16 @@ export default async function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800">Dashboard Administrator</h1>
-        <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-2 rounded-lg">
-          Periode: Ganjil 2024/2025
-        </span>
+        <h1 className="text-2xl font-bold text-gray-800">Monitoring & Laporan Admin</h1>
+        <div className="flex items-center space-x-3">
+          <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-2 rounded-lg">
+            Periode: Ganjil 2024/2025
+          </span>
+          <PrintPDFButton targetId="admin-dashboard-report" fileName="Laporan_Monitoring_Admin" />
+        </div>
       </div>
 
+      <div id="admin-dashboard-report" className="space-y-6">
       {/* Statistik Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center">
@@ -56,11 +63,25 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
-        <h2 className="text-xl font-bold text-gray-800 mb-2">Pusat Kendali SIAKAD</h2>
-        <p className="text-gray-500 max-w-2xl mx-auto">
-          Selamat datang di panel admin. Anda dapat mengelola seluruh data master seperti Dosen, Mahasiswa, Mata Kuliah, dan Kelas pada menu Master Data di sebelah kiri.
-        </p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Distribusi Angkatan (Pie Chart) */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-1">
+          <div className="flex items-center mb-4">
+            <PieChartIcon className="w-5 h-5 text-gray-500 mr-2" />
+            <h3 className="text-lg font-bold text-gray-800">Sebaran Mahasiswa Aktif</h3>
+          </div>
+          <AngkatanDistributionChart data={data.angkatanDistribution} />
+        </div>
+
+        {/* Course Enrollments (Bar Chart) */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-2">
+          <div className="flex items-center mb-4">
+            <BarChart3 className="w-5 h-5 text-gray-500 mr-2" />
+            <h3 className="text-lg font-bold text-gray-800">Top Peminat Mata Kuliah</h3>
+          </div>
+          <CourseEnrollmentChart data={data.courseEnrollments} />
+        </div>
+      </div>
       </div>
     </div>
   );

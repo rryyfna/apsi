@@ -20,6 +20,9 @@ export async function getDosenDashboardData() {
           mataKuliah: true,
           _count: {
             select: { enrollments: true }
+          },
+          enrollments: {
+            select: { huruf: true }
           }
         }
       }
@@ -31,6 +34,21 @@ export async function getDosenDashboardData() {
   const totalKelas = dosen.kelas.length;
   const totalMahasiswaDiajar = dosen.kelas.reduce((acc: number, curr: any) => acc + curr._count.enrollments, 0);
 
+  const gradeCount: Record<string, number> = {};
+  
+  dosen.kelas.forEach((k: any) => {
+    k.enrollments.forEach((en: any) => {
+      if (en.huruf) {
+        gradeCount[en.huruf] = (gradeCount[en.huruf] || 0) + 1;
+      }
+    });
+  });
+
+  const gradeDistribution = Object.keys(gradeCount).map(grade => ({
+    grade,
+    count: gradeCount[grade]
+  })).sort((a, b) => a.grade.localeCompare(b.grade));
+
   return {
     profile: {
       nidn: dosen.nidn,
@@ -40,6 +58,7 @@ export async function getDosenDashboardData() {
       totalKelas,
       totalMahasiswaDiajar
     },
+    gradeDistribution,
     kelas: dosen.kelas.map((k: any) => ({
       id: k.id,
       mataKuliah: k.mataKuliah.namaMk,

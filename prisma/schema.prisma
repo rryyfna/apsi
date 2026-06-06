@@ -4,8 +4,7 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("POSTGRES_URL")
-  directUrl = env("POSTGRES_URL_NON_POOLING")
+  url       = env("DATABASE_URL")
 }
 
 enum Role {
@@ -49,13 +48,15 @@ model Dosen {
 }
 
 model MataKuliah {
-  id       String @id @default(cuid())
-  kodeMk   String @unique
-  namaMk   String
-  sks      Int
-  semester Int?
+  id            String @id @default(cuid())
+  kodeMk        String @unique
+  namaMk        String
+  sks           Int
+  semester      Int?
+  isNonTeaching Boolean @default(false)
   
-  kelas    Kelas[]
+  kelas         Kelas[]
+  cplMappings   CourseCPLMapping[]
 }
 
 model Kelas {
@@ -89,5 +90,60 @@ model Enrollment {
   mahasiswa        Mahasiswa @relation(fields: [mahasiswaId], references: [id])
   kelas            Kelas     @relation(fields: [kelasId], references: [id])
   
+  nonTeachingTemplateId String?
+  nonTeachingTemplate   NonTeachingGradeTemplate? @relation(fields: [nonTeachingTemplateId], references: [id])
+  nonTeachingScores     NonTeachingGradeScore[]
+  
   @@unique([mahasiswaId, kelasId])
+}
+
+model CPL {
+  id          String @id @default(cuid())
+  kode        String @unique // e.g., CPL-1, CPL-2
+  deskripsi   String
+  
+  mappings    CourseCPLMapping[]
+}
+
+model CourseCPLMapping {
+  id           String @id @default(cuid())
+  mataKuliahId String
+  cplId        String
+  ukName       String // e.g., "UK1", "UK2" -> maps to Tugas, UTS...
+  threshold    Float  // The minimum score to pass this CPL
+  
+  mataKuliah   MataKuliah @relation(fields: [mataKuliahId], references: [id], onDelete: Cascade)
+  cpl          CPL        @relation(fields: [cplId], references: [id], onDelete: Cascade)
+  
+  @@unique([mataKuliahId, cplId, ukName])
+}
+
+model NonTeachingGradeTemplate {
+  id           String @id @default(cuid())
+  nama         String // e.g., "Template Skripsi"
+  
+  components   NonTeachingGradeComponent[]
+  enrollments  Enrollment[]
+}
+
+model NonTeachingGradeComponent {
+  id           String @id @default(cuid())
+  templateId   String
+  namaKriteria String // e.g., "Nilai Pembimbing", "Nilai Penguji"
+  bobot        Float  // Percentage, must sum to 100 per template
+  
+  template     NonTeachingGradeTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  scores       NonTeachingGradeScore[]
+}
+
+model NonTeachingGradeScore {
+  id           String @id @default(cuid())
+  enrollmentId String
+  componentId  String
+  nilai        Float
+  
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  component    NonTeachingGradeComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  
+  @@unique([enrollmentId, componentId])
 }

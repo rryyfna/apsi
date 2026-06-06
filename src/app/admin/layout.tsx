@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 import Sidebar from '@/app/components/Sidebar';
 import Topbar from '@/app/components/Topbar';
-import { Home, Database, Settings } from 'lucide-react';
+import { Home, Database, Settings, FileSpreadsheet, Target } from 'lucide-react';
 import { db } from '@/lib/db';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -15,6 +15,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const navItems = [
     { label: 'Beranda', href: '/admin', icon: <Home className="w-5 h-5" /> },
     { label: 'Master Data', href: '/admin/master', icon: <Database className="w-5 h-5" /> },
+    { label: 'Penilaian Khusus', href: '/admin/penilaian-khusus', icon: <FileSpreadsheet className="w-5 h-5" /> },
+    { label: 'Monitoring CPL', href: '/admin/cpl', icon: <Target className="w-5 h-5" /> },
     { label: 'Pengaturan', href: '/admin/settings', icon: <Settings className="w-5 h-5" /> },
   ];
 

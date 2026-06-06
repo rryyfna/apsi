@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getDosenDashboardData, getKelasWithEnrollments, updateNilai } from '@/app/actions/dosen';
 import { Save, AlertCircle, CheckCircle } from 'lucide-react';
+import PrintPDFButton from '@/app/components/PrintPDFButton';
 
 export default function InputNilaiPage() {
   const [kelas, setKelas] = useState<any[]>([]);
@@ -108,11 +109,14 @@ export default function InputNilaiPage() {
 
       {/* Tabel Nilai */}
       {!isLoading && selectedKelas && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 bg-blue-600 text-white flex justify-between items-center">
+        <div id="class-report" className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 bg-blue-600 text-white flex justify-between items-center rounded-t-lg">
             <div>
               <h3 className="text-lg font-bold">Input Nilai: {selectedKelas.mataKuliah.namaMk} (Kelas {selectedKelas.namaKelas})</h3>
               <p className="text-blue-100 text-sm">Bobot: Tugas 20%, UTS 30%, UAS 30%, Partisipasi 10%, Proyek 10%</p>
+            </div>
+            <div className="flex-shrink-0">
+               <PrintPDFButton targetId="class-report" fileName={`Nilai_${selectedKelas.mataKuliah.kodeMk}_Kls_${selectedKelas.namaKelas}`} />
             </div>
           </div>
           

@@ -45,12 +45,15 @@ export async function getMahasiswaDashboardData() {
   };
 
   const activeClasses = [];
+  const gradeCount: Record<string, number> = {};
 
   for (const enrollment of mahasiswa.enrollments) {
     const sks = enrollment.kelas.mataKuliah.sks;
     if (enrollment.huruf) {
       totalSks += sks;
       totalBobot += (sks * letterToGrade(enrollment.huruf));
+      
+      gradeCount[enrollment.huruf] = (gradeCount[enrollment.huruf] || 0) + 1;
     } else {
       // Jika belum ada nilai (active class)
       activeClasses.push({
@@ -61,6 +64,11 @@ export async function getMahasiswaDashboardData() {
       });
     }
   }
+
+  const gradeDistribution = Object.keys(gradeCount).map(grade => ({
+    grade,
+    count: gradeCount[grade]
+  })).sort((a, b) => a.grade.localeCompare(b.grade));
 
   const ipk = totalSks > 0 ? (totalBobot / totalSks).toFixed(2) : '0.00';
 
@@ -75,7 +83,8 @@ export async function getMahasiswaDashboardData() {
       ipk,
       totalSks,
     },
-    activeClasses
+    activeClasses,
+    gradeDistribution
   };
 }
 
