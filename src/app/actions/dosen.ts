@@ -2,6 +2,7 @@
 
 import { db } from '@/lib/db';
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 async function getUserId() {
   const headersList = await headers();
@@ -10,7 +11,7 @@ async function getUserId() {
 
 export async function getDosenDashboardData() {
   const userId = await getUserId();
-  if (!userId) throw new Error('Unauthorized');
+  if (!userId) redirect('/');
 
   const dosen = await db.dosen.findUnique({
     where: { userId },
@@ -28,8 +29,7 @@ export async function getDosenDashboardData() {
       }
     }
   });
-
-  if (!dosen) throw new Error('Dosen not found');
+  if (!dosen) redirect('/');
 
   const totalKelas = dosen.kelas.length;
   const totalMahasiswaDiajar = dosen.kelas.reduce((acc: number, curr: any) => acc + curr._count.enrollments, 0);
@@ -71,10 +71,10 @@ export async function getDosenDashboardData() {
 
 export async function getKelasWithEnrollments(kelasId: string) {
   const userId = await getUserId();
-  if (!userId) throw new Error('Unauthorized');
+  if (!userId) redirect('/');
 
   const dosen = await db.dosen.findUnique({ where: { userId } });
-  if (!dosen) throw new Error('Dosen not found');
+  if (!dosen) redirect('/');
 
   const kelas = await db.kelas.findUnique({
     where: { id: kelasId },
@@ -89,7 +89,7 @@ export async function getKelasWithEnrollments(kelasId: string) {
   });
 
   // Pastikan dosen ini yang mengajar
-  if (kelas?.dosenId !== dosen.id) throw new Error('Unauthorized access to class');
+  if (kelas?.dosenId !== dosen.id) redirect('/');
 
   return kelas;
 }

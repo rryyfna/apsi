@@ -2,6 +2,7 @@
 
 import { db } from '@/lib/db';
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 async function getUserId() {
   const headersList = await headers();
@@ -10,7 +11,7 @@ async function getUserId() {
 
 export async function getMahasiswaDashboardData() {
   const userId = await getUserId();
-  if (!userId) throw new Error('Unauthorized');
+  if (!userId) redirect('/');
 
   const mahasiswa = await db.mahasiswa.findUnique({
     where: { userId },
@@ -25,7 +26,7 @@ export async function getMahasiswaDashboardData() {
     }
   });
 
-  if (!mahasiswa) throw new Error('Mahasiswa not found');
+  if (!mahasiswa) redirect('/');
 
   let totalSks = 0;
   let totalBobot = 0;

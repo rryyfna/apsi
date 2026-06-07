@@ -31,14 +31,14 @@ export default function GradeDistributionChart({ data }: GradeDistributionChartP
             paddingAngle={5}
             dataKey="count"
             nameKey="grade"
-            label={({ grade, percent }) => `${grade} ${(percent * 100).toFixed(0)}%`}
+            label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
           >
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
           <Tooltip 
-            formatter={(value: number) => [`${value} Mata Kuliah`, 'Jumlah']}
+            formatter={(value: any) => [`${value} Mata Kuliah`, 'Jumlah']}
             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
           />
           <Legend />

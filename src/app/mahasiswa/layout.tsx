@@ -17,7 +17,6 @@ export default async function MahasiswaLayout({ children }: { children: React.Re
     { label: 'Beranda', href: '/mahasiswa', icon: <Home className="w-5 h-5" /> },
     { label: 'KRS (Rencana Studi)', href: '/mahasiswa/krs', icon: <BookOpen className="w-5 h-5" /> },
     { label: 'KHS (Hasil Studi)', href: '/mahasiswa/khs', icon: <GraduationCap className="w-5 h-5" /> },
-    { label: 'Jadwal Kuliah', href: '/mahasiswa/jadwal', icon: <Calendar className="w-5 h-5" /> },
   ];
 
   return (

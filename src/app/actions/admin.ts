@@ -2,6 +2,7 @@
 
 import { db } from '@/lib/db';
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 async function isAdmin() {
   const headersList = await headers();
@@ -10,7 +11,7 @@ async function isAdmin() {
 }
 
 export async function getAdminDashboardData() {
-  if (!(await isAdmin())) throw new Error('Unauthorized');
+  if (!(await isAdmin())) redirect('/');
 
   const totalMahasiswa = await db.mahasiswa.count();
   const totalDosen = await db.dosen.count();
@@ -55,7 +56,7 @@ export async function getAdminDashboardData() {
 }
 
 export async function getMasterData() {
-  if (!(await isAdmin())) throw new Error('Unauthorized');
+  if (!(await isAdmin())) redirect('/');
 
   const [mahasiswa, dosen, mataKuliah, kelas] = await Promise.all([
     db.mahasiswa.findMany({ take: 20 }), // Batasi 20 untuk preview

@@ -22,13 +22,18 @@ export default function LoginForm({ targetRole, roleTitle }: LoginFormProps) {
     const formData = new FormData(e.currentTarget);
     formData.append('targetRole', targetRole);
     
-    const result = await login(formData);
+    try {
+      const result = await login(formData);
 
-    if (result.error) {
-      setError(result.error);
+      if (result.error) {
+        setError(result.error);
+        setIsLoading(false);
+      } else if (result.success && result.redirectUrl) {
+        router.push(result.redirectUrl);
+      }
+    } catch (err) {
+      setError("Terjadi kesalahan sistem. Silakan periksa koneksi atau hubungi admin.");
       setIsLoading(false);
-    } else if (result.success && result.redirectUrl) {
-      router.push(result.redirectUrl);
     }
   }
 

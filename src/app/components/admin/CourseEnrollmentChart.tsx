@@ -38,7 +38,7 @@ export default function CourseEnrollmentChart({ data }: CourseEnrollmentChartPro
           <YAxis allowDecimals={false} />
           <Tooltip 
             cursor={{ fill: '#f3f4f6' }}
-            formatter={(value: number) => [`${value} Mahasiswa`, 'Jumlah']}
+            formatter={(value: any) => [`${value} Mahasiswa`, 'Jumlah']}
             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
           />
           <Legend />

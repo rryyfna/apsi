@@ -31,14 +31,14 @@ export default function AngkatanDistributionChart({ data }: AngkatanDistribution
             paddingAngle={5}
             dataKey="count"
             nameKey="angkatan"
-            label={({ angkatan, percent }) => `${angkatan} ${(percent * 100).toFixed(0)}%`}
+            label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
           >
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
           <Tooltip 
-            formatter={(value: number) => [`${value} Mahasiswa`, 'Jumlah']}
+            formatter={(value: any) => [`${value} Mahasiswa`, 'Jumlah']}
             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
           />
           <Legend />

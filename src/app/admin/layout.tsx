@@ -17,7 +17,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { label: 'Master Data', href: '/admin/master', icon: <Database className="w-5 h-5" /> },
     { label: 'Penilaian Khusus', href: '/admin/penilaian-khusus', icon: <FileSpreadsheet className="w-5 h-5" /> },
     { label: 'Monitoring CPL', href: '/admin/cpl', icon: <Target className="w-5 h-5" /> },
-    { label: 'Pengaturan', href: '/admin/settings', icon: <Settings className="w-5 h-5" /> },
   ];
 
   return (
