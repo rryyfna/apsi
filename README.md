@@ -49,15 +49,30 @@ npx prisma db push
 
 *Catatan: Perintah di atas akan membaca file `prisma/schema.prisma` dan membuatkan tabel-tabel yang diperlukan di database PostgreSQL Anda.*
 
-### 5. Seeding Database (Opsional namun sangat disarankan)
+### 5. Seeding Database (Wajib untuk Data Master)
 
-Karena database yang baru dibuat masih kosong, Anda bisa menjalankan *seed script* untuk mengisi data awal (termasuk akun administrator default dan data dummy lainnya).
+Karena database yang baru dibuat masih kosong, Anda perlu menjalankan *seed script* untuk mengisi data awal (akun administrator default, data dosen, mata kuliah, dan mahasiswa).
+
+**PENTING: Persiapan Dataset**
+File data (Excel) untuk seeding tidak disertakan di repositori GitHub ini. 
+1. Silakan unduh folder dataset yang akan diberikan secara terpisah via Google Drive.
+2. Buat folder baru bernama `dataset` di dalam direktori utama (*root*) project.
+3. Letakkan folder hasil unduhan tersebut ke dalam folder `dataset` sehingga struktur *path*-nya menjadi persis seperti ini:
+   ```text
+   Siakad_Fedo/
+   ├── dataset/
+   │   └── APSI 25_5_26/
+   │       ├── Data Pengampu.xlsx
+   │       └── (file excel nilai lainnya...)
+   ```
+
+Setelah file dataset berada di posisi yang tepat, jalankan perintah seeding berikut:
 
 ```bash
 npx ts-node scripts/seed.ts
 ```
 
-*Jika terjadi error terkait module, Anda juga bisa mencoba menjalankan: `npx prisma db seed` jika sudah dikonfigurasi di `package.json`.*
+*(Catatan: Jika folder dataset tidak diletakkan dengan benar, script tidak akan error namun hanya akan membuatkan akun Admin saja tanpa data tambahan).*
 
 ### 6. Jalankan Server Development
 
