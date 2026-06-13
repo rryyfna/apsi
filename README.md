@@ -37,9 +37,18 @@ Aplikasi ini membutuhkan file konfigurasi environment untuk dapat terkoneksi ke 
    ```
 2. Buka file `.env` dan sesuaikan kredensial PostgreSQL Anda (username, password, port, dan nama database) pada variabel `POSTGRES_URL`, `POSTGRES_URL_NON_POOLING`, dan `DATABASE_URL`. Ubah juga `JWT_SECRET` menjadi teks acak yang aman.
 
-### 4. Setup Database & Prisma
+### 4. Jalankan Database via Docker
 
-Setelah `.env` terkonfigurasi, Anda harus melakukan migrasi skema Prisma ke dalam database PostgreSQL Anda.
+Aplikasi ini sudah menyediakan konfigurasi Docker untuk menjalankan PostgreSQL. Pastikan Anda menjalankan perintah berikut untuk mengaktifkan database sebelum melanjutkan:
+
+```bash
+docker-compose up -d
+```
+*(Catatan: Anda mungkin memerlukan `sudo` tergantung konfigurasi sistem Anda, misalnya: `sudo docker-compose up -d`)*
+
+### 5. Setup Database & Prisma
+
+Setelah `.env` terkonfigurasi dan database berjalan, Anda harus melakukan migrasi skema Prisma ke dalam database PostgreSQL Anda.
 
 Jalankan perintah ini:
 
@@ -49,7 +58,7 @@ npx prisma db push
 
 *Catatan: Perintah di atas akan membaca file `prisma/schema.prisma` dan membuatkan tabel-tabel yang diperlukan di database PostgreSQL Anda.*
 
-### 5. Seeding Database (Wajib untuk Data Master)
+### 6. Seeding Database (Wajib untuk Data Master)
 
 Karena database yang baru dibuat masih kosong, Anda perlu menjalankan *seed script* untuk mengisi data awal (akun administrator default, data dosen, mata kuliah, dan mahasiswa).
 
@@ -74,7 +83,7 @@ npx ts-node scripts/seed.ts
 
 *(Catatan: Jika folder dataset tidak diletakkan dengan benar, script tidak akan error namun hanya akan membuatkan akun Admin saja tanpa data tambahan).*
 
-### 6. Jalankan Server Development
+### 7. Jalankan Server Development
 
 Sekarang aplikasi siap dijalankan:
 
