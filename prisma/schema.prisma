@@ -62,6 +62,13 @@ model MataKuliah {
   kelas         Kelas[]
   cplMappings   CourseCPLMapping[]
   cpmk          CPMK[]
+
+  prasyaratId   String?
+  prasyarat     MataKuliah?  @relation("Prasyarat", fields: [prasyaratId], references: [id])
+  menjadiPrasyarat MataKuliah[] @relation("Prasyarat")
+  
+  namaMkEn      String?
+  deskripsiEn   String?
 }
 
 model Kelas {
@@ -81,6 +88,10 @@ model Kelas {
   mataKuliah           MataKuliah @relation(fields: [mataKuliahId], references: [id])
   dosen                Dosen      @relation(fields: [dosenId], references: [id])
   enrollments          Enrollment[]
+  cpmkKolomNilai       KelasCpmkKolomNilai[]
+
+  updatedAt            DateTime @default(now()) @updatedAt
+  updatedBy            String?
   
   @@unique([mataKuliahId, namaKelas])
 }
@@ -95,8 +106,12 @@ model Enrollment {
   nilaiUas         Float?
   nilaiPartisipasi Float?
   nilaiProyek      Float?
+  nilaiTotal       Float?
   nilaiAkhir       Float?
   huruf            String?
+
+  updatedAt        DateTime @default(now()) @updatedAt
+  updatedBy        String?
   
   mahasiswa        Mahasiswa @relation(fields: [mahasiswaId], references: [id])
   kelas            Kelas     @relation(fields: [kelasId], references: [id])
@@ -112,6 +127,7 @@ model CPL {
   id          String @id @default(cuid())
   kode        String @unique // e.g., CPL-1, CPL-2
   deskripsi   String
+  deskripsiEn String?
   
   mappings    CourseCPLMapping[]
   cpmkMappings CpmkCplMapping[]
@@ -178,24 +194,27 @@ model CPMK {
   id           String @id @default(cuid())
   kode         String // e.g., CPMK-1
   deskripsi    String
+  deskripsiEn  String?
   mataKuliahId String
   
   mataKuliah   MataKuliah @relation(fields: [mataKuliahId], references: [id], onDelete: Cascade)
-  kolomNilai   KolomNilaiCPMK[]
+  kelasKolomNilai KelasCpmkKolomNilai[]
   cplMappings  CpmkCplMapping[]
   
   @@unique([mataKuliahId, kode])
 }
 
-model KolomNilaiCPMK {
+model KelasCpmkKolomNilai {
   id        String @id @default(cuid())
+  kelasId   String
   cpmkId    String
   namaKolom String // "TUGAS", "UTS", "UAS", "PARTISIPASI", "PROYEK"
   bobot     Float  // Percentage, e.g., 40 for 40%
   
+  kelas     Kelas  @relation(fields: [kelasId], references: [id], onDelete: Cascade)
   cpmk      CPMK   @relation(fields: [cpmkId], references: [id], onDelete: Cascade)
   
-  @@unique([cpmkId, namaKolom])
+  @@unique([kelasId, cpmkId, namaKolom])
 }
 
 model CpmkCplMapping {

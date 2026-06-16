@@ -14,7 +14,6 @@ export default function ImportExcelButton({ kelasId, onSuccess }: ImportExcelBut
   const [isOpen, setIsOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ImportedStudent[]>([]);
-  const [weights, setWeights] = useState<any>(null);
   const [isParsing, setIsParsing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,23 +53,16 @@ export default function ImportExcelButton({ kelasId, onSuccess }: ImportExcelBut
           throw new Error('Format tabel tidak ditemukan. Pastikan ada baris dengan kolom No dan Nim.');
         }
 
-        const weightsRow = jsonData[headerRowIdx + 2] || [];
-        const extractedWeights = {
-          tugas: Number(weightsRow[3]) || 0,
-          uts: Number(weightsRow[4]) || 0,
-          uas: Number(weightsRow[5]) || 0,
-          partisipasi: Number(weightsRow[6]) || 0,
-          proyek: Number(weightsRow[7]) || 0,
-        };
-
         const students: ImportedStudent[] = [];
-        for (let i = headerRowIdx + 3; i < jsonData.length; i++) {
+        for (let i = headerRowIdx + 1; i < jsonData.length; i++) {
           const row = jsonData[i];
-          if (!row || !row[0]) break; 
+          if (!row || !row[0]) continue; 
+          if (row[0] === 'No') continue;
+          if (!row[1]) continue;
 
           students.push({
-            nim: row[1],
-            nama: row[2],
+            nim: String(row[1]).trim(),
+            nama: String(row[2]).trim(),
             nilai: {
               tugas: Number(row[3]) || 0,
               uts: Number(row[4]) || 0,
@@ -81,7 +73,6 @@ export default function ImportExcelButton({ kelasId, onSuccess }: ImportExcelBut
           });
         }
 
-        setWeights(extractedWeights);
         setParsedData(students);
       } catch (err: any) {
         setError(err.message || 'Gagal membaca file Excel.');
@@ -103,7 +94,7 @@ export default function ImportExcelButton({ kelasId, onSuccess }: ImportExcelBut
     
     setIsImporting(true);
     try {
-      const result = await importGradesFromExcel(kelasId, { weights, students: parsedData });
+      const result = await importGradesFromExcel(kelasId, { students: parsedData });
       if (result.success) {
         setIsOpen(false);
         if (onSuccess) onSuccess();
@@ -120,7 +111,6 @@ export default function ImportExcelButton({ kelasId, onSuccess }: ImportExcelBut
   const resetState = () => {
     setFile(null);
     setParsedData([]);
-    setWeights(null);
     setError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };

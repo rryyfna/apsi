@@ -3,62 +3,74 @@
 import { db } from '@/lib/db';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 
 export async function getMataKuliahWithCpmk() {
   const mk = await db.mataKuliah.findMany({
     include: {
-      cpmk: {
-        include: {
-          kolomNilai: true
-        }
-      }
+      cpmk: true
     },
     orderBy: { kodeMk: 'asc' }
   });
   return mk;
 }
 
-export async function saveCpmkSetting(mataKuliahId: string, cpmks: { id?: string, kode: string, deskripsi: string }[]) {
+export async function saveCpmkSetting(mataKuliahId: string, cpmks: { id?: string, kode: string, deskripsi: string, deskripsiEn?: string }[]) {
   try {
-    // We overwrite CPMKs for this mataKuliah by recreating them. 
-    // In a production app, we would selectively delete/update/create to preserve relations.
-    // For now, to fulfill the requirement, we will delete existing and insert new ones.
-    
-    // Delete existing CPMK
-    await db.cPMK.deleteMany({
-      where: { mataKuliahId }
-    });
+    const existingCpmks = await db.cPMK.findMany({ where: { mataKuliahId } });
+    const existingIds = existingCpmks.map(c => c.id);
+    const incomingIds = cpmks.map(c => c.id).filter(id => id && id.startsWith('c'));
 
-    // Create new CPMK
-    for (const item of cpmks) {
-      await db.cPMK.create({
-        data: {
-          kode: item.kode,
-          deskripsi: item.deskripsi,
-          mataKuliahId: mataKuliahId
-        }
+    // Delete those that are removed
+    const idsToDelete = existingIds.filter(id => !incomingIds.includes(id));
+    if (idsToDelete.length > 0) {
+      await db.cPMK.deleteMany({
+        where: { id: { in: idsToDelete } }
       });
     }
 
+    // Upsert the rest
+    for (const item of cpmks) {
+      if (item.id && item.id.startsWith('c')) {
+        await db.cPMK.update({
+          where: { id: item.id },
+          data: {
+            kode: item.kode,
+            deskripsi: item.deskripsi || '',
+            deskripsiEn: item.deskripsiEn || null
+          }
+        });
+      } else {
+        await db.cPMK.create({
+          data: {
+            kode: item.kode,
+            deskripsi: item.deskripsi || '',
+            deskripsiEn: item.deskripsiEn || null,
+            mataKuliahId
+          }
+        });
+      }
+    }
+
+    revalidatePath('/kaprodi/cpmk');
     return { success: true };
   } catch (error: any) {
     console.error('Error saving CPMK:', error);
-    return { success: false, error: 'Gagal menyimpan pengaturan CPMK' };
+    return { success: false, error: error.message || 'Gagal menyimpan pengaturan CPMK' };
   }
 }
 
 export async function getMonitoringCpl() {
-  // Aggregate CPL data from students' enrollments
   const enrollments = await db.enrollment.findMany({
     include: {
       mahasiswa: true,
       kelas: {
         include: {
+          cpmkKolomNilai: true,
           mataKuliah: {
             include: {
               cpmk: {
                 include: {
-                  kolomNilai: true,
                   cplMappings: {
                     include: {
                       cpl: true
@@ -82,34 +94,62 @@ export async function getMonitoringCpl() {
         id: en.mahasiswa.id,
         nim: nim,
         name: en.mahasiswa.name,
-        // Ini adalah nilai agregat per CPL
         cplScores: {}
       });
     }
 
     const mhs = studentMap.get(nim);
-    
-    // Asumsi perhitungan CPL: 
-    // Nilai akhir (0-100) dari mata kuliah ini menyumbang ke CPL.
-    // Jika sebuah mata kuliah terpetakan ke CPL-1, CPL-2, maka nilai akhir kelas tersebut dirata-rata ke CPL.
-    const nilaiTotal = (en.nilaiTugas || 0) + (en.nilaiUts || 0) + (en.nilaiUas || 0) + (en.nilaiPartisipasi || 0) + (en.nilaiProyek || 0);
 
-    // Dapatkan daftar unik CPL untuk kelas ini
-    const cplsForClass = new Set<string>();
+    // Hitung skor masing-masing CPMK berdasarkan plotting kelas
+    const cpmkScores = new Map<string, number>();
+
     en.kelas.mataKuliah.cpmk.forEach(cpmk => {
-      cpmk.cplMappings.forEach(m => cplsForClass.add(m.cpl.kode));
+      let score = 0;
+      const mappings = en.kelas.cpmkKolomNilai.filter(m => m.cpmkId === cpmk.id);
+      
+      mappings.forEach(m => {
+        const percentage = m.bobot / 100;
+        let colScore = 0;
+        if (m.namaKolom.toLowerCase() === 'tugas') colScore = en.nilaiTugas || 0;
+        else if (m.namaKolom.toLowerCase() === 'uts') colScore = en.nilaiUts || 0;
+        else if (m.namaKolom.toLowerCase() === 'uas') colScore = en.nilaiUas || 0;
+        else if (m.namaKolom.toLowerCase() === 'partisipasi') colScore = en.nilaiPartisipasi || 0;
+        else if (m.namaKolom.toLowerCase() === 'proyek') colScore = en.nilaiProyek || 0;
+        
+        score += colScore * percentage;
+      });
+      cpmkScores.set(cpmk.id, score);
     });
 
-    cplsForClass.forEach(cplKode => {
+    // Petakan skor CPMK ke CPL
+    // Karena "a" dianggap sama semua, IK = Average(CPMK), CPL = Average(IK).
+    // Secara matematis jika bobot sama, skor CPL kelas ini adalah rata-rata skor CPMK yang terkait.
+    const classCplScores = new Map<string, { total: number, count: number }>();
+    
+    en.kelas.mataKuliah.cpmk.forEach(cpmk => {
+      const cpmkScore = cpmkScores.get(cpmk.id) || 0;
+      cpmk.cplMappings.forEach(mapping => {
+        const cplKode = mapping.cpl.kode;
+        if (!classCplScores.has(cplKode)) {
+          classCplScores.set(cplKode, { total: 0, count: 0 });
+        }
+        const data = classCplScores.get(cplKode)!;
+        data.total += cpmkScore;
+        data.count += 1;
+      });
+    });
+
+    // Tambahkan rata-rata CPL kelas ini ke skor agregat mahasiswa
+    for (const [cplKode, data] of classCplScores.entries()) {
       if (!mhs.cplScores[cplKode]) {
         mhs.cplScores[cplKode] = { total: 0, count: 0 };
       }
-      mhs.cplScores[cplKode].total += nilaiTotal;
+      const cplScoreForClass = data.total / data.count; // Average of mapped CPMKs
+      mhs.cplScores[cplKode].total += cplScoreForClass;
       mhs.cplScores[cplKode].count += 1;
-    });
+    }
   }
 
-  // Format the output
   const result = Array.from(studentMap.values()).map(mhs => {
     const finalScores: Record<string, number> = {};
     for (const [cplKode, data] of Object.entries(mhs.cplScores) as any) {

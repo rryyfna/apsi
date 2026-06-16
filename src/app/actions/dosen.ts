@@ -140,6 +140,7 @@ export async function updateNilai(enrollmentId: string, data: any) {
       nilaiUas: !isNaN(parseFloat(nilaiUas)) ? parseFloat(nilaiUas) : null,
       nilaiPartisipasi: !isNaN(parseFloat(nilaiPartisipasi)) ? parseFloat(nilaiPartisipasi) : null,
       nilaiProyek: !isNaN(parseFloat(nilaiProyek)) ? parseFloat(nilaiProyek) : null,
+      nilaiTotal: total,
       nilaiAkhir: skala4,
       huruf: huruf
     }
@@ -155,44 +156,49 @@ export async function getPlottingCpmk(kelasId: string) {
   const kelas = await db.kelas.findUnique({
     where: { id: kelasId },
     include: {
+      cpmkKolomNilai: true,
       mataKuliah: {
         include: {
-          cpmk: {
-            include: {
-              kolomNilai: true
-            }
-          }
+          cpmk: true
         }
       }
     }
   });
 
   if (!kelas) return null;
-  return kelas.mataKuliah;
+  return kelas;
 }
 
-export async function savePlottingCpmk(mataKuliahId: string, mapping: Record<string, Record<string, number>>) {
+export async function savePlottingCpmk(kelasId: string, mapping: Record<string, Record<string, number>>) {
   const userId = await getUserId();
   if (!userId) return { error: 'Unauthorized' };
 
   try {
-    const cpmks = await db.cPMK.findMany({ where: { mataKuliahId } });
+    const kelas = await db.kelas.findUnique({
+      where: { id: kelasId },
+      include: { mataKuliah: { include: { cpmk: true } } }
+    });
     
-    // Hapus kolomNilai lama untuk mata kuliah ini
-    await db.kolomNilaiCPMK.deleteMany({
-      where: { cpmk: { mataKuliahId } }
+    if (!kelas) return { error: 'Kelas tidak ditemukan' };
+    
+    const cpmks = kelas.mataKuliah.cpmk;
+    
+    // Hapus kolomNilai lama untuk kelas ini
+    await db.kelasCpmkKolomNilai.deleteMany({
+      where: { kelasId }
     });
 
-    const newData: { cpmkId: string, namaKolom: string, bobot: number }[] = [];
+    const newData: { kelasId: string, cpmkId: string, namaKolom: string, bobot: number }[] = [];
     
     // Mapping format: mapping[colName][cpmkKode] = number
     for (const colName of Object.keys(mapping)) {
       for (const cpmkKode of Object.keys(mapping[colName])) {
         const bobot = mapping[colName][cpmkKode];
         if (bobot > 0) {
-          const cpmk = cpmks.find(c => c.kode === cpmkKode);
+          const cpmk = cpmks.find((c: any) => c.kode === cpmkKode);
           if (cpmk) {
             newData.push({
+              kelasId: kelasId,
               cpmkId: cpmk.id,
               namaKolom: colName,
               bobot: bobot
@@ -203,7 +209,7 @@ export async function savePlottingCpmk(mataKuliahId: string, mapping: Record<str
     }
 
     if (newData.length > 0) {
-      await db.kolomNilaiCPMK.createMany({ data: newData });
+      await db.kelasCpmkKolomNilai.createMany({ data: newData });
     }
 
     return { success: true };
@@ -212,3 +218,32 @@ export async function savePlottingCpmk(mataKuliahId: string, mapping: Record<str
     return { error: 'Gagal menyimpan plotting CPMK' };
   }
 }
+
+export async function saveBobotKelas(kelasId: string, bobotData: { bobotTugas: number, bobotUts: number, bobotUas: number, bobotPartisipasi: number, bobotProyek: number }) {
+  const userId = await getUserId();
+  if (!userId) return { error: 'Unauthorized' };
+
+  try {
+    const total = bobotData.bobotTugas + bobotData.bobotUts + bobotData.bobotUas + bobotData.bobotPartisipasi + bobotData.bobotProyek;
+    if (Math.round(total) !== 100) {
+      return { error: 'Total bobot harus 100%' };
+    }
+
+    await db.kelas.update({
+      where: { id: kelasId },
+      data: {
+        bobotTugas: bobotData.bobotTugas,
+        bobotUts: bobotData.bobotUts,
+        bobotUas: bobotData.bobotUas,
+        bobotPartisipasi: bobotData.bobotPartisipasi,
+        bobotProyek: bobotData.bobotProyek
+      }
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: 'Gagal menyimpan bobot kelas' };
+  }
+}
+

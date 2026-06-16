@@ -2,6 +2,12 @@
 
 Sistem Informasi Akademik (SIAKAD) yang dibangun menggunakan [Next.js](https://nextjs.org), Prisma ORM, dan PostgreSQL.
 
+## Fitur Utama
+- **Manajemen Nilai & Bobot**: Dosen dapat mengatur bobot penilaian (Tugas, UTS, UAS, dll.) dan mengimpor nilai secara massal via Excel.
+- **Role-Based Access Control**: Mendukung multi-aktor (Admin, Kaprodi, Mutu, Dosen, Mahasiswa).
+- **Capaian Pembelajaran**: Integrasi evaluasi berbasis CPL dan CPMK.
+- **Reporting**: Cetak PDF untuk laporan distribusi nilai dan performa kelas.
+
 ## Prasyarat (Prerequisites)
 
 Sebelum menjalankan aplikasi ini, pastikan Anda telah menginstal:
@@ -100,13 +106,4 @@ npm run dev
 
 Buka [http://localhost:3000](http://localhost:3000) di browser Anda untuk melihat hasilnya.
 
----
 
-## Learn More (Bawaan Next.js)
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!

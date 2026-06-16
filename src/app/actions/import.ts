@@ -15,22 +15,22 @@ export type ImportedStudent = {
   };
 };
 
-export async function importGradesFromExcel(kelasId: string, payload: { weights: any, students: ImportedStudent[] }) {
+export async function importGradesFromExcel(kelasId: string, payload: { students: ImportedStudent[] }) {
   try {
     let successCount = 0;
-    const { weights, students } = payload;
+    const { students } = payload;
     
-    // Update weights in Kelas
-    if (weights) {
-      await db.kelas.update({
-        where: { id: kelasId },
-        data: {
-          bobotTugas: weights.tugas,
-          bobotUts: weights.uts,
-          bobotUas: weights.uas,
-        }
-      });
+    // Ambil bobot kelas yang sudah ada di database, jangan overwrite dari Excel.
+    const kelas = await db.kelas.findUnique({ where: { id: kelasId } });
+    if (!kelas) {
+      return { success: false, message: 'Kelas tidak ditemukan.' };
     }
+
+    const wTugas = (kelas.bobotTugas ?? 20) / 100;
+    const wUts = (kelas.bobotUts ?? 30) / 100;
+    const wUas = (kelas.bobotUas ?? 30) / 100;
+    const wPartisipasi = (kelas.bobotPartisipasi ?? 10) / 100;
+    const wProyek = (kelas.bobotProyek ?? 10) / 100;
 
     // Overwrite: hapus semua data nilai/enrollment lama di kelas ini sebelum memasukkan yang baru
     await db.enrollment.deleteMany({
@@ -61,20 +61,12 @@ export async function importGradesFromExcel(kelasId: string, payload: { weights:
           }
         });
         
-        // Fetch fresh Kelas to get weights
-        const kelas = await db.kelas.findUnique({ where: { id: kelasId } });
-        const wTugas = (kelas?.bobotTugas ?? 20) / 100;
-        const wUts = (kelas?.bobotUts ?? 30) / 100;
-        const wUas = (kelas?.bobotUas ?? 30) / 100;
-        const wPartisipasi = (kelas?.bobotPartisipasi ?? 10) / 100;
-        const wProyek = (kelas?.bobotProyek ?? 10) / 100;
-
         let total = 0;
-        if (student.nilai.tugas) total += (student.nilai.tugas * wTugas);
-        if (student.nilai.uts) total += (student.nilai.uts * wUts);
-        if (student.nilai.uas) total += (student.nilai.uas * wUas);
-        if (student.nilai.partisipasi) total += (student.nilai.partisipasi * wPartisipasi);
-        if (student.nilai.proyek) total += (student.nilai.proyek * wProyek);
+        if (student.nilai.tugas != null) total += (student.nilai.tugas * wTugas);
+        if (student.nilai.uts != null) total += (student.nilai.uts * wUts);
+        if (student.nilai.uas != null) total += (student.nilai.uas * wUas);
+        if (student.nilai.partisipasi != null) total += (student.nilai.partisipasi * wPartisipasi);
+        if (student.nilai.proyek != null) total += (student.nilai.proyek * wProyek);
 
         let huruf = 'E';
         let skala4 = 0.0;
@@ -100,8 +92,9 @@ export async function importGradesFromExcel(kelasId: string, payload: { weights:
             nilaiUas: student.nilai.uas,
             nilaiPartisipasi: student.nilai.partisipasi,
             nilaiProyek: student.nilai.proyek,
-            nilaiAkhir: total > 0 ? skala4 : null,
-            huruf: total > 0 ? huruf : null
+            nilaiTotal: Math.round(total * 100) / 100,
+            nilaiAkhir: skala4,
+            huruf: huruf
           },
           create: {
             mahasiswaId: mhs.id,
@@ -111,8 +104,9 @@ export async function importGradesFromExcel(kelasId: string, payload: { weights:
             nilaiUas: student.nilai.uas,
             nilaiPartisipasi: student.nilai.partisipasi,
             nilaiProyek: student.nilai.proyek,
-            nilaiAkhir: total > 0 ? skala4 : null,
-            huruf: total > 0 ? huruf : null
+            nilaiTotal: Math.round(total * 100) / 100,
+            nilaiAkhir: skala4,
+            huruf: huruf
           }
         });
         

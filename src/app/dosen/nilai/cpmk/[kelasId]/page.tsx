@@ -28,20 +28,26 @@ export default function PlottingCpmkPage() {
   async function loadData() {
     setIsLoading(true);
     try {
-      const mk = await getPlottingCpmk(kelasId);
-      if (mk) {
-        setMataKuliah(mk);
-        const cpmkList = mk.cpmk.map((c: any) => c.kode).sort();
+      const kelas = await getPlottingCpmk(kelasId);
+      if (kelas && kelas.mataKuliah) {
+        setMataKuliah(kelas.mataKuliah);
+        const cpmkList = kelas.mataKuliah.cpmk.map((c: any) => c.kode).sort();
         setCpmks(cpmkList);
 
         const initialMapping: Record<string, Record<string, number>> = {};
         columns.forEach(col => {
           initialMapping[col] = {};
           cpmkList.forEach((cpmkKode: string) => {
-            // Cek apakah ada bobot di database
-            const cpmkData = mk.cpmk.find((c: any) => c.kode === cpmkKode);
-            const kolomData = cpmkData?.kolomNilai?.find((k: any) => k.namaKolom.toLowerCase() === col.toLowerCase());
-            initialMapping[col][cpmkKode] = kolomData ? kolomData.bobot : 0;
+            // Cari data di kelas.cpmkKolomNilai
+            const cpmkData = kelas.mataKuliah.cpmk.find((c: any) => c.kode === cpmkKode);
+            if (cpmkData) {
+              const kolomData = kelas.cpmkKolomNilai?.find(
+                (k: any) => k.cpmkId === cpmkData.id && k.namaKolom.toLowerCase() === col.toLowerCase()
+              );
+              initialMapping[col][cpmkKode] = kolomData ? kolomData.bobot : 0;
+            } else {
+              initialMapping[col][cpmkKode] = 0;
+            }
           });
         });
         setMapping(initialMapping);
@@ -78,7 +84,7 @@ export default function PlottingCpmkPage() {
     try {
       if (!mataKuliah) throw new Error('Data Mata Kuliah tidak ditemukan');
       
-      const res = await savePlottingCpmk(mataKuliah.id, mapping);
+      const res = await savePlottingCpmk(kelasId, mapping);
       if (res.error) {
         setMessage({ type: 'error', text: res.error });
       } else {

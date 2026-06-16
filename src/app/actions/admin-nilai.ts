@@ -93,6 +93,7 @@ export async function updateNilaiAdmin(
       nilaiUas: !isNaN(parseFloat(String(nilaiUas))) ? parseFloat(String(nilaiUas)) : null,
       nilaiPartisipasi: !isNaN(parseFloat(String(nilaiPartisipasi))) ? parseFloat(String(nilaiPartisipasi)) : null,
       nilaiProyek: !isNaN(parseFloat(String(nilaiProyek))) ? parseFloat(String(nilaiProyek)) : null,
+      nilaiTotal: total,
       nilaiAkhir: skala4,
       huruf: huruf
     }

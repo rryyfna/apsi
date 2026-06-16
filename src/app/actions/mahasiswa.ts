@@ -19,7 +19,22 @@ export async function getMahasiswaDashboardData() {
       enrollments: {
         include: {
           kelas: {
-            include: { mataKuliah: true }
+            include: {
+              cpmkKolomNilai: true,
+              mataKuliah: {
+                include: {
+                  cpmk: {
+                    include: {
+                      cplMappings: {
+                        include: {
+                          cpl: true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -73,12 +88,68 @@ export async function getMahasiswaDashboardData() {
 
   const ipk = totalSks > 0 ? (totalBobot / totalSks).toFixed(2) : '0.00';
 
-  const cplDistribution = [
-    { name: 'Sikap', value: 85 },
-    { name: 'Pengetahuan', value: 78 },
-    { name: 'Ket. Umum', value: 82 },
-    { name: 'Ket. Khusus', value: 88 },
-  ];
+  // Kalkulasi CPL riil
+  const studentCplScores = new Map<string, { name: string, total: number, count: number }>();
+
+  for (const en of mahasiswa.enrollments) {
+    const cpmkScores = new Map<string, number>();
+
+    en.kelas.mataKuliah.cpmk.forEach((cpmk: any) => {
+      let score = 0;
+      const mappings = en.kelas.cpmkKolomNilai.filter((m: any) => m.cpmkId === cpmk.id);
+      
+      mappings.forEach((m: any) => {
+        const percentage = m.bobot / 100;
+        let colScore = 0;
+        if (m.namaKolom.toLowerCase() === 'tugas') colScore = en.nilaiTugas || 0;
+        else if (m.namaKolom.toLowerCase() === 'uts') colScore = en.nilaiUts || 0;
+        else if (m.namaKolom.toLowerCase() === 'uas') colScore = en.nilaiUas || 0;
+        else if (m.namaKolom.toLowerCase() === 'partisipasi') colScore = en.nilaiPartisipasi || 0;
+        else if (m.namaKolom.toLowerCase() === 'proyek') colScore = en.nilaiProyek || 0;
+        
+        score += colScore * percentage;
+      });
+      cpmkScores.set(cpmk.id, score);
+    });
+
+    const classCplScores = new Map<string, { name: string, total: number, count: number }>();
+    
+    en.kelas.mataKuliah.cpmk.forEach((cpmk: any) => {
+      const cpmkScore = cpmkScores.get(cpmk.id) || 0;
+      cpmk.cplMappings.forEach((mapping: any) => {
+        const cplKode = mapping.cpl.kode;
+        if (!classCplScores.has(cplKode)) {
+          classCplScores.set(cplKode, { name: mapping.cpl.kode, total: 0, count: 0 });
+        }
+        const data = classCplScores.get(cplKode)!;
+        data.total += cpmkScore;
+        data.count += 1;
+      });
+    });
+
+    for (const [cplKode, data] of classCplScores.entries()) {
+      if (!studentCplScores.has(cplKode)) {
+        studentCplScores.set(cplKode, { name: data.name, total: 0, count: 0 });
+      }
+      const cplScoreForClass = data.total / data.count;
+      const agg = studentCplScores.get(cplKode)!;
+      agg.total += cplScoreForClass;
+      agg.count += 1;
+    }
+  }
+
+  const cplDistribution = Array.from(studentCplScores.values()).map(data => ({
+    name: data.name,
+    value: Math.round(data.total / data.count)
+  }));
+
+  // Jika belum ada CPL
+  if (cplDistribution.length === 0) {
+    cplDistribution.push(
+      { name: 'Sikap', value: 0 },
+      { name: 'Pengetahuan', value: 0 }
+    );
+  }
 
   return {
     profile: {
@@ -130,6 +201,32 @@ export async function enrollClass(kelasId: string) {
   });
 
   if (existing) return { error: 'Anda sudah terdaftar di kelas ini' };
+
+  // Cek Prasyarat
+  const targetKelas = await db.kelas.findUnique({
+    where: { id: kelasId },
+    include: { mataKuliah: true }
+  });
+
+  if (targetKelas?.mataKuliah.prasyaratId) {
+    const prasyaratId = targetKelas.mataKuliah.prasyaratId;
+    // Cari apakah mahasiswa pernah mengambil matkul prasyarat dan lulus (misalnya nilaiAkhir >= 2.0 atau huruf C)
+    const passedPrasyarat = await db.enrollment.findFirst({
+      where: {
+        mahasiswaId: mahasiswa.id,
+        kelas: {
+          mataKuliahId: prasyaratId
+        },
+        huruf: {
+          in: ['A', 'A-', 'B+', 'B', 'C+', 'C'] // Anggap D dan E tidak lulus
+        }
+      }
+    });
+
+    if (!passedPrasyarat) {
+      return { error: 'Anda belum lulus mata kuliah prasyarat untuk kelas ini.' };
+    }
+  }
 
   await db.enrollment.create({
     data: {

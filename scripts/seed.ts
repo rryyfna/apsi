@@ -13,7 +13,6 @@ async function main() {
   await prisma.enrollment.deleteMany({});
   await prisma.kelas.deleteMany({});
   await prisma.cpmkCplMapping.deleteMany({});
-  await prisma.kolomNilaiCPMK.deleteMany({});
   await prisma.cPMK.deleteMany({});
   await prisma.courseCPLMapping.deleteMany({});
   await prisma.cPL.deleteMany({});

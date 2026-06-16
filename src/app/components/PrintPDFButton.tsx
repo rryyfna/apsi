@@ -1,34 +1,62 @@
 'use client';
 
 import { Printer } from 'lucide-react';
-import html2canvas from 'html2canvas-pro';
-import jsPDF from 'jspdf';
 import { useState } from 'react';
 
 export default function PrintPDFButton({ targetId, fileName }: { targetId: string, fileName: string }) {
   const [isPrinting, setIsPrinting] = useState(false);
 
-  const handlePrint = async () => {
+  const handlePrint = () => {
     const element = document.getElementById(targetId);
     if (!element) return;
 
-    setIsPrinting(true);
-    try {
-      const canvas = await html2canvas(element, { scale: 2 });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
-      pdf.save(`${fileName}.pdf`);
-    } catch (error) {
-      console.error('Error generating PDF', error);
-      alert('Gagal membuat PDF');
-    } finally {
-      setIsPrinting(false);
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      alert('Tolong izinkan pop-ups untuk mencetak dokumen.');
+      return;
     }
+
+    // Get all stylesheets to preserve styling
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map(node => node.outerHTML)
+      .join('\n');
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${fileName}</title>
+          ${styles}
+          <style>
+            @media print {
+              body {
+                padding: 20px;
+                background-color: white;
+              }
+              /* Hide elements that shouldn't be printed */
+              button, .no-print {
+                display: none !important;
+              }
+            }
+          </style>
+        </head>
+        <body class="bg-white">
+          ${element.outerHTML}
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+
+    // Wait for styles to load before printing
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }, 500);
   };
 
   return (

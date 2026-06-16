@@ -7,7 +7,7 @@ import { getMataKuliahWithCpmk, saveCpmkSetting } from '@/app/actions/kaprodi';
 export default function PengaturanCpmkPage() {
   const [mataKuliah, setMataKuliah] = useState<any[]>([]);
   const [selectedMk, setSelectedMk] = useState<string>('');
-  const [cpmks, setCpmks] = useState<{ id: string, kode: string, deskripsi: string }[]>([]);
+  const [cpmks, setCpmks] = useState<{ id: string, kode: string, deskripsi: string, deskripsiEn?: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
@@ -36,7 +36,8 @@ export default function PengaturanCpmkPage() {
         setCpmks(mk.cpmk.map((c: any) => ({
           id: c.id || Math.random().toString(),
           kode: c.kode,
-          deskripsi: c.deskripsi
+          deskripsi: c.deskripsi,
+          deskripsiEn: c.deskripsiEn || ''
         })));
       } else {
         setCpmks([]);
@@ -45,14 +46,27 @@ export default function PengaturanCpmkPage() {
   }, [selectedMk, mataKuliah]);
 
   const handleAddCpmk = () => {
-    setCpmks([...cpmks, { id: Date.now().toString(), kode: `CPMK-${cpmks.length + 1}`, deskripsi: '' }]);
+    let maxNum = 0;
+    cpmks.forEach(c => {
+      const match = c.kode.match(/CPMK-(\d+)/i);
+      if (match && parseInt(match[1]) > maxNum) {
+        maxNum = parseInt(match[1]);
+      }
+    });
+    
+    setCpmks([...cpmks, { 
+      id: Date.now().toString(), 
+      kode: `CPMK-${maxNum + 1}`, 
+      deskripsi: '', 
+      deskripsiEn: '' 
+    }]);
   };
 
   const handleRemoveCpmk = (id: string) => {
     setCpmks(cpmks.filter(c => c.id !== id));
   };
 
-  const handleChange = (id: string, field: 'kode' | 'deskripsi', value: string) => {
+  const handleChange = (id: string, field: 'kode' | 'deskripsi' | 'deskripsiEn', value: string) => {
     setCpmks(cpmks.map(c => c.id === id ? { ...c, [field]: value } : c));
   };
 
@@ -135,12 +149,19 @@ export default function PengaturanCpmkPage() {
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Deskripsi CPMK</label>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Deskripsi CPMK (ID)</label>
                   <textarea 
                     value={cpmk.deskripsi}
                     onChange={(e) => handleChange(cpmk.id, 'deskripsi', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[80px]"
                     placeholder="Masukkan deskripsi..."
+                  />
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mt-3 mb-1">Deskripsi CPMK (EN)</label>
+                  <textarea 
+                    value={cpmk.deskripsiEn || ''}
+                    onChange={(e) => handleChange(cpmk.id, 'deskripsiEn', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm min-h-[80px]"
+                    placeholder="Enter english description..."
                   />
                 </div>
                 <div className="pt-6">
