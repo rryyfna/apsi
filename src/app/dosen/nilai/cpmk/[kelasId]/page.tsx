@@ -21,43 +21,45 @@ export default function PlottingCpmkPage() {
   const [mapping, setMapping] = useState<Record<string, Record<string, number>>>({});
 
   useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        const kelas = await getPlottingCpmk(kelasId);
+        if (kelas && kelas.mataKuliah) {
+          setMataKuliah(kelas.mataKuliah);
+          const cpmkList = kelas.mataKuliah.cpmk.map((c: { kode: string }) => c.kode).sort();
+          setCpmks(cpmkList);
+
+          const initialMapping: Record<string, Record<string, number>> = {};
+          columns.forEach(col => {
+            initialMapping[col] = {};
+            cpmkList.forEach((cpmkKode: string) => {
+              // Cari data di kelas.cpmkKolomNilai
+              const cpmkData = kelas.mataKuliah.cpmk.find((c: { kode: string; id: string }) => c.kode === cpmkKode);
+              if (cpmkData) {
+                const kolomData = kelas.cpmkKolomNilai?.find(
+                  (k: { cpmkId: string; namaKolom: string; bobot: number }) => k.cpmkId === cpmkData.id && k.namaKolom.toLowerCase() === col.toLowerCase()
+                );
+                initialMapping[col][cpmkKode] = kolomData ? kolomData.bobot : 0;
+              } else {
+                initialMapping[col][cpmkKode] = 0;
+              }
+            });
+          });
+          setMapping(initialMapping);
+        }
+      } catch {
+        setMessage({ type: 'error', text: 'Gagal memuat data CPMK' });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadData() {
-    setIsLoading(true);
-    try {
-      const kelas = await getPlottingCpmk(kelasId);
-      if (kelas && kelas.mataKuliah) {
-        setMataKuliah(kelas.mataKuliah);
-        const cpmkList = kelas.mataKuliah.cpmk.map((c: any) => c.kode).sort();
-        setCpmks(cpmkList);
 
-        const initialMapping: Record<string, Record<string, number>> = {};
-        columns.forEach(col => {
-          initialMapping[col] = {};
-          cpmkList.forEach((cpmkKode: string) => {
-            // Cari data di kelas.cpmkKolomNilai
-            const cpmkData = kelas.mataKuliah.cpmk.find((c: any) => c.kode === cpmkKode);
-            if (cpmkData) {
-              const kolomData = kelas.cpmkKolomNilai?.find(
-                (k: any) => k.cpmkId === cpmkData.id && k.namaKolom.toLowerCase() === col.toLowerCase()
-              );
-              initialMapping[col][cpmkKode] = kolomData ? kolomData.bobot : 0;
-            } else {
-              initialMapping[col][cpmkKode] = 0;
-            }
-          });
-        });
-        setMapping(initialMapping);
-      }
-    } catch (e) {
-      setMessage({ type: 'error', text: 'Gagal memuat data CPMK' });
-    } finally {
-      setIsLoading(false);
-    }
-  }
 
   const handlePercentageChange = (col: string, cpmk: string, value: string) => {
     const numValue = parseInt(value) || 0;
@@ -93,7 +95,7 @@ export default function PlottingCpmkPage() {
           router.push('/dosen/nilai');
         }, 1500);
       }
-    } catch (e) {
+    } catch {
       setMessage({ type: 'error', text: 'Terjadi kesalahan sistem' });
     } finally {
       setIsSaving(false);

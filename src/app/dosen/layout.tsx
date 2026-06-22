@@ -16,6 +16,7 @@ export default async function DosenLayout({ children }: { children: React.ReactN
   const navItems = [
     { label: 'Beranda', href: '/dosen', icon: <Home className="w-5 h-5" /> },
     { label: 'Input Nilai', href: '/dosen/nilai', icon: <FileEdit className="w-5 h-5" /> },
+    { label: 'Rekap Presensi', href: '/dosen/presensi', icon: <Calendar className="w-5 h-5" /> },
   ];
 
   return (

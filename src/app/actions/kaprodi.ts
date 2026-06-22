@@ -60,8 +60,21 @@ export async function saveCpmkSetting(mataKuliahId: string, cpmks: { id?: string
   }
 }
 
-export async function getMonitoringCpl() {
+export async function getMonitoringCpl(filters?: { angkatan?: string, semester?: number }) {
+  const whereClause: any = {};
+  
+  if (filters?.angkatan || filters?.semester) {
+    whereClause.AND = [];
+    if (filters.angkatan) {
+      whereClause.AND.push({ mahasiswa: { angkatan: filters.angkatan } });
+    }
+    if (filters.semester) {
+      whereClause.AND.push({ kelas: { mataKuliah: { semester: filters.semester } } });
+    }
+  }
+
   const enrollments = await db.enrollment.findMany({
+    where: whereClause,
     include: {
       mahasiswa: true,
       kelas: {
@@ -164,4 +177,30 @@ export async function getMonitoringCpl() {
   });
 
   return result.sort((a, b) => a.nim.localeCompare(b.nim));
+}
+export async function getKelasList() {
+  return await db.kelas.findMany({
+    include: {
+      mataKuliah: true,
+      dosen: true,
+      _count: {
+        select: { enrollments: true }
+      }
+    },
+    orderBy: { namaKelas: 'asc' }
+  });
+}
+
+export async function updateKuotaKelas(kelasId: string, kuotaReguler: number) {
+  try {
+    await db.kelas.update({
+      where: { id: kelasId },
+      data: { kuotaReguler }
+    });
+    revalidatePath('/kaprodi/kelas');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error updating kuota:', error);
+    return { success: false, error: 'Gagal mengupdate kuota kelas.' };
+  }
 }

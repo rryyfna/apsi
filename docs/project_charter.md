@@ -20,6 +20,7 @@
 ## Riwayat Revisi
 - 1.0.0 (6 Juni 2026): Draft Awal
 - 1.1.0 (6 Juni 2026): Pembaruan spesifikasi teknologi dan dataset
+- 1.2.0 (23 Juni 2026): Penambahan fitur Registrasi, Import CPMK Excel, Filter Semester/Angkatan, Edit Kuota, Entry Manual, dan Pengayaan Menu.
 
 ---
 
@@ -34,9 +35,10 @@ Proyek ini bertujuan untuk mengembangkan Sistem Informasi Akademik (SIAKAD) komp
 
 ## 3. Ruang Lingkup (Scope)
 Sistem ini mencakup pengembangan fitur inti untuk tiga *role* otoritas:
-1. **Mahasiswa:** Registrasi semester, pengisian KRS, melihat KHS/Transkrip, jadwal kuliah, absensi, dan pengajuan akademik.
-2. **Dosen:** Manajemen nilai (termasuk breakdown komponen nilai: Tugas, UTS, UAS, Partisipasi, Proyek), absensi mahasiswa, jadwal mengajar, dan bimbingan akademik.
-3. **Karyawan (Admin/Tendik):** Manajemen master data (mahasiswa, dosen, mata kuliah, ruangan, kurikulum), konfigurasi periode akademik, persetujuan administratif, dan pelaporan.
+1. **Mahasiswa:** Registrasi akun, registrasi semester, pengisian KRS, melihat KHS/Transkrip, jadwal kuliah, absensi, dan pengajuan akademik. Akses menu yang lebih kaya pada portal.
+2. **Dosen:** Registrasi akun, manajemen nilai (termasuk breakdown komponen nilai: Tugas, UTS, UAS, Partisipasi, Proyek), absensi mahasiswa, jadwal mengajar, dan bimbingan akademik.
+3. **Karyawan (Admin/Tendik):** Manajemen master data (mahasiswa, dosen, mata kuliah, ruangan, kurikulum) dengan opsi tambah data di luar database (manual entry), konfigurasi periode akademik, persetujuan administratif, dan pelaporan dengan filter semester serta angkatan.
+4. **Kaprodi:** Manajemen kuota kelas secara mandiri, import data narasi CPMK/CPL (bilingual) via Excel, dan dashboard pemetaan CPMK ke CPL.
 
 ## 4. Asumsi dan Kendala
 - **Asumsi:** Klien memiliki dataset mentah (format Excel) yang merepresentasikan data mahasiswa, dosen, mata kuliah, dan daftar nilai kelas, yang akan digunakan sebagai data acuan utama (seeding) untuk skema database relasional.

@@ -4,16 +4,27 @@ import { useState, useEffect } from 'react';
 import { getAvailableClasses, enrollClass, getMahasiswaDashboardData } from '@/app/actions/mahasiswa';
 import { BookOpen, CheckCircle, AlertCircle } from 'lucide-react';
 
+interface KRSClassData {
+  id: string;
+  namaKelas: string;
+  kuotaReguler: number;
+  jumlahAmbilReguler: number;
+  mataKuliah: { namaMk: string; kodeMk: string; sks: number };
+  dosen: { name: string };
+}
+
+interface ActiveClassData {
+  kodeMk: string;
+  kelas: string;
+  sks: number;
+}
+
 export default function KRSPage() {
-  const [classes, setClasses] = useState<any[]>([]);
-  const [activeClasses, setActiveClasses] = useState<any[]>([]);
+  const [classes, setClasses] = useState<KRSClassData[]>([]);
+  const [activeClasses, setActiveClasses] = useState<ActiveClassData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   async function loadData() {
     setIsLoading(true);
@@ -22,7 +33,7 @@ export default function KRSPage() {
         getAvailableClasses(),
         getMahasiswaDashboardData()
       ]);
-      setClasses(available);
+      setClasses(available as KRSClassData[]);
       setActiveClasses(dashboard.activeClasses);
     } catch (e: any) {
       setError(e.message || 'Gagal memuat data');
@@ -30,6 +41,11 @@ export default function KRSPage() {
       setIsLoading(false);
     }
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadData();
+  }, []);
 
   async function handleEnroll(kelasId: string) {
     setIsLoading(true);
@@ -44,7 +60,7 @@ export default function KRSPage() {
         setSuccess('Berhasil mendaftar kelas!');
         await loadData(); // Reload data
       }
-    } catch (e: any) {
+    } catch {
       setError('Terjadi kesalahan sistem');
     } finally {
       setIsLoading(false);

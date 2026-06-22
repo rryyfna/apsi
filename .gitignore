@@ -49,3 +49,4 @@ next-env.d.ts
 dev.db
 dev.db-journal
 docker-compose.yml
+SKILL.md

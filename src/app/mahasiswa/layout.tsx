@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 import Sidebar from '@/app/components/Sidebar';
 import Topbar from '@/app/components/Topbar';
-import { Home, BookOpen, GraduationCap, Calendar } from 'lucide-react';
+import { Home, BookOpen, GraduationCap } from 'lucide-react';
 import { db } from '@/lib/db';
 
 export default async function MahasiswaLayout({ children }: { children: React.ReactNode }) {

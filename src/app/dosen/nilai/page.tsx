@@ -6,10 +6,41 @@ import { Save, AlertCircle, CheckCircle } from 'lucide-react';
 import PrintPDFButton from '@/app/components/PrintPDFButton';
 import ImportExcelButton from '@/app/components/ImportExcelButton';
 
+interface KelasData {
+  id: string;
+  kodeMk: string;
+  mataKuliah: string;
+  namaKelas: string;
+}
+
+interface EnrollmentData {
+  id: string;
+  mahasiswa: { nim: string; name: string };
+  nilaiTugas?: string | number | null;
+  nilaiUts?: string | number | null;
+  nilaiUas?: string | number | null;
+  nilaiPartisipasi?: string | number | null;
+  nilaiProyek?: string | number | null;
+  nilaiTotal?: number | null;
+  nilaiAkhir?: number | null;
+  huruf?: string | null;
+}
+
+interface DetailKelas {
+  id: string;
+  namaKelas: string;
+  bobotTugas?: number | null;
+  bobotUts?: number | null;
+  bobotUas?: number | null;
+  bobotPartisipasi?: number | null;
+  bobotProyek?: number | null;
+  mataKuliah: { kodeMk: string; namaMk: string };
+}
+
 export default function InputNilaiPage() {
-  const [kelas, setKelas] = useState<any[]>([]);
-  const [selectedKelas, setSelectedKelas] = useState<any>(null);
-  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [kelas, setKelas] = useState<KelasData[]>([]);
+  const [selectedKelas, setSelectedKelas] = useState<DetailKelas | null>(null);
+  const [enrollments, setEnrollments] = useState<EnrollmentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{type: 'error'|'success', text: string} | null>(null);
@@ -18,20 +49,19 @@ export default function InputNilaiPage() {
   const [bobotData, setBobotData] = useState({ bobotTugas: 20, bobotUts: 30, bobotUas: 30, bobotPartisipasi: 10, bobotProyek: 10 });
 
   useEffect(() => {
+    async function loadDashboard() {
+      setIsLoading(true);
+      try {
+        const data = await getDosenDashboardData();
+        setKelas(data.kelas);
+      } catch {
+        console.error("Gagal memuat dashboard");
+      } finally {
+        setIsLoading(false);
+      }
+    }
     loadDashboard();
   }, []);
-
-  async function loadDashboard() {
-    setIsLoading(true);
-    try {
-      const data = await getDosenDashboardData();
-      setKelas(data.kelas);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
-  }
 
   async function handleSelectKelas(kelasId: string) {
     setIsLoading(true);
@@ -47,7 +77,7 @@ export default function InputNilaiPage() {
         bobotPartisipasi: detail.bobotPartisipasi ?? 10,
         bobotProyek: detail.bobotProyek ?? 10
       });
-    } catch (e) {
+    } catch {
       setMessage({ type: 'error', text: 'Gagal memuat detail kelas.' });
     } finally {
       setIsLoading(false);
@@ -67,11 +97,11 @@ export default function InputNilaiPage() {
           const wProyek = (selectedKelas.bobotProyek ?? 10) / 100;
 
           let total = 0;
-          const t = parseFloat(updated.nilaiTugas || '0'); if (!isNaN(t)) total += (t * wTugas);
-          const uts = parseFloat(updated.nilaiUts || '0'); if (!isNaN(uts)) total += (uts * wUts);
-          const uas = parseFloat(updated.nilaiUas || '0'); if (!isNaN(uas)) total += (uas * wUas);
-          const p = parseFloat(updated.nilaiPartisipasi || '0'); if (!isNaN(p)) total += (p * wPartisipasi);
-          const pr = parseFloat(updated.nilaiProyek || '0'); if (!isNaN(pr)) total += (pr * wProyek);
+          const t = parseFloat(String(updated.nilaiTugas || '0')); if (!isNaN(t)) total += (t * wTugas);
+          const uts = parseFloat(String(updated.nilaiUts || '0')); if (!isNaN(uts)) total += (uts * wUts);
+          const uas = parseFloat(String(updated.nilaiUas || '0')); if (!isNaN(uas)) total += (uas * wUas);
+          const p = parseFloat(String(updated.nilaiPartisipasi || '0')); if (!isNaN(p)) total += (p * wPartisipasi);
+          const pr = parseFloat(String(updated.nilaiProyek || '0')); if (!isNaN(pr)) total += (pr * wProyek);
 
           let huruf = 'E';
           let skala4 = 0.0;
@@ -98,6 +128,7 @@ export default function InputNilaiPage() {
     setMessage(null);
     try {
       const en = enrollments.find(e => e.id === enrollmentId);
+      if (!en) throw new Error('Enrollment not found');
       const res = await updateNilai(enrollmentId, {
         nilaiTugas: en.nilaiTugas,
         nilaiUts: en.nilaiUts,
@@ -110,10 +141,9 @@ export default function InputNilaiPage() {
         setMessage({ type: 'error', text: res.error });
       } else {
         setMessage({ type: 'success', text: 'Nilai berhasil disimpan!' });
-        // Reload detail
-        handleSelectKelas(selectedKelas.id);
+        if (selectedKelas) handleSelectKelas(selectedKelas.id);
       }
-    } catch (e) {
+    } catch {
       setMessage({ type: 'error', text: 'Terjadi kesalahan sistem.' });
     } finally {
       setIsSaving(false);
@@ -121,6 +151,7 @@ export default function InputNilaiPage() {
   }
 
   async function handleSaveBobot() {
+    if (!selectedKelas) return;
     setIsSaving(true);
     setMessage(null);
     try {
@@ -130,9 +161,9 @@ export default function InputNilaiPage() {
       } else {
         setMessage({ type: 'success', text: 'Bobot berhasil diperbarui!' });
         setIsBobotModalOpen(false);
-        handleSelectKelas(selectedKelas.id); // Reload
+        if (selectedKelas) handleSelectKelas(selectedKelas.id); // Reload
       }
-    } catch (e) {
+    } catch {
       setMessage({ type: 'error', text: 'Terjadi kesalahan saat menyimpan bobot.' });
     } finally {
       setIsSaving(false);

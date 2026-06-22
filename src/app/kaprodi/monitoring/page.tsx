@@ -1,30 +1,42 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react';
+import { Search, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react';
 import PrintPDFButton from '@/app/components/PrintPDFButton';
 import { getMonitoringCpl } from '@/app/actions/kaprodi';
 
+interface StudentData {
+  id: string;
+  nim: string;
+  name: string;
+  cplScores: Record<string, number>;
+}
+
 export default function MonitoringCplPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [students, setStudents] = useState<any[]>([]);
+  const [filterAngkatan, setFilterAngkatan] = useState('');
+  const [filterSemester, setFilterSemester] = useState('');
+  const [students, setStudents] = useState<StudentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadData();
-  }, []);
-
-  async function loadData() {
-    setIsLoading(true);
-    try {
-      const data = await getMonitoringCpl();
-      setStudents(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        const filters: Record<string, string | number> = {};
+        if (filterAngkatan) filters.angkatan = filterAngkatan;
+        if (filterSemester) filters.semester = parseInt(filterSemester);
+        
+        const data = await getMonitoringCpl(filters);
+        setStudents(data);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
     }
-  }
+    loadData();
+  }, [filterAngkatan, filterSemester]);
 
   const filteredStudents = students.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -85,15 +97,41 @@ export default function MonitoringCplPage() {
 
       <div id="cpl-monitoring" className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input 
-              type="text" 
-              placeholder="Cari NIM atau Nama..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-            />
+          <div className="relative flex-1 max-w-md flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input 
+                type="text" 
+                placeholder="Cari NIM atau Nama..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <select 
+              value={filterAngkatan}
+              onChange={(e) => setFilterAngkatan(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            >
+              <option value="">Semua Angkatan</option>
+              <option value="2020">2020</option>
+              <option value="2021">2021</option>
+              <option value="2022">2022</option>
+              <option value="2023">2023</option>
+              <option value="2024">2024</option>
+            </select>
+            <select 
+              value={filterSemester}
+              onChange={(e) => setFilterSemester(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            >
+              <option value="">Semua Semester</option>
+              {[1,2,3,4,5,6,7,8].map(s => (
+                <option key={s} value={s}>Semester {s}</option>
+              ))}
+            </select>
           </div>
         </div>
 

@@ -1,17 +1,24 @@
-import { getMahasiswaDashboardData } from '@/app/actions/mahasiswa';
-import { FileText } from 'lucide-react';
 import PrintPDFButton from '@/app/components/PrintPDFButton';
 import { db } from '@/lib/db';
 import { headers } from 'next/headers';
 
-export default async function KHSPage() {
+import SemesterFilter from '@/app/components/SemesterFilter';
+
+export default async function KHSPage({ searchParams }: { searchParams: Promise<{ semester?: string }> }) {
   const headersList = await headers();
   const userId = headersList.get('x-user-id') || '';
+  const resolvedParams = await searchParams;
+  const semesterFilter = resolvedParams?.semester ? parseInt(resolvedParams.semester) : null;
 
   const mahasiswa = await db.mahasiswa.findUnique({
     where: { userId },
     include: {
       enrollments: {
+        where: semesterFilter ? {
+          kelas: {
+            mataKuliah: { semester: semesterFilter }
+          }
+        } : undefined,
         include: {
           kelas: {
             include: { mataKuliah: true, dosen: true }
@@ -25,9 +32,12 @@ export default async function KHSPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-800">Kartu Hasil Studi (KHS)</h1>
-        <PrintPDFButton targetId="khs-document" fileName={`KHS_${mahasiswa.nim}`} />
+        <div className="flex items-center space-x-3">
+          <SemesterFilter />
+          <PrintPDFButton targetId="khs-document" fileName={`KHS_${mahasiswa.nim}`} />
+        </div>
       </div>
 
       <div id="khs-document" className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-2">
@@ -59,7 +69,7 @@ export default async function KHSPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {mahasiswa.enrollments.map((en: any, idx: number) => (
+              {mahasiswa.enrollments.map((en, idx: number) => (
                 <tr key={en.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{idx + 1}</td>
                   <td className="px-6 py-4 whitespace-nowrap">

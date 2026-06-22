@@ -2,12 +2,21 @@ import { getDosenDashboardData } from '@/app/actions/dosen';
 import { Users, BookOpen, PieChart as PieChartIcon } from 'lucide-react';
 import GradeDistributionChart from '@/app/components/mahasiswa/GradeDistributionChart';
 
-export default async function DosenDashboard() {
-  const data = await getDosenDashboardData();
+import SemesterFilter from '@/app/components/SemesterFilter';
+
+export default async function DosenDashboard({ searchParams }: { searchParams: Promise<{ semester?: string }> }) {
+  const resolvedParams = await searchParams;
+  const semesterFilter = resolvedParams?.semester ? parseInt(resolvedParams.semester) : undefined;
+  const data = await getDosenDashboardData(semesterFilter);
   
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">Dashboard Dosen</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-gray-800">Dashboard Dosen</h1>
+        <div className="flex items-center space-x-3">
+          <SemesterFilter />
+        </div>
+      </div>
       
       {/* Profil Singkat */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
@@ -71,7 +80,7 @@ export default async function DosenDashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {data.kelas.map((k: any) => (
+              {data.kelas.map((k: { id: string; kodeMk: string; mataKuliah: string; namaKelas: string; jumlahMahasiswa: number }) => (
                 <tr key={k.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{k.kodeMk}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{k.mataKuliah}</td>

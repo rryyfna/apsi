@@ -59,11 +59,12 @@ export async function getMasterData() {
   if (!(await isAdmin())) redirect('/');
 
   const [mahasiswa, dosen, mataKuliah, kelas] = await Promise.all([
-    db.mahasiswa.findMany({ take: 20 }), // Batasi 20 untuk preview
-    db.dosen.findMany({ take: 20 }),
-    db.mataKuliah.findMany({ take: 20 }),
+    db.mahasiswa.findMany({ take: 20, orderBy: { user: { createdAt: 'desc' } } }), // Batasi 20 untuk preview
+    db.dosen.findMany({ take: 20, orderBy: { user: { createdAt: 'desc' } } }),
+    db.mataKuliah.findMany({ take: 20, orderBy: { id: 'desc' } }),
     db.kelas.findMany({ 
       take: 20,
+      orderBy: { updatedAt: 'desc' },
       include: {
         mataKuliah: true,
         dosen: true,

@@ -1,16 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Save, Plus, Trash2, Loader2, AlertCircle, Upload } from 'lucide-react';
 import { getMataKuliahWithCpmk, saveCpmkSetting } from '@/app/actions/kaprodi';
+import { importCpmkCplExcel } from '@/app/actions/import-narasi';
+
+interface CpmkData { id: string; kode: string; deskripsi: string; deskripsiEn?: string | null }
+interface MkData { id: string; kodeMk: string; namaMk: string; cpmk: CpmkData[] }
 
 export default function PengaturanCpmkPage() {
-  const [mataKuliah, setMataKuliah] = useState<any[]>([]);
+  const [mataKuliah, setMataKuliah] = useState<MkData[]>([]);
   const [selectedMk, setSelectedMk] = useState<string>('');
   const [cpmks, setCpmks] = useState<{ id: string, kode: string, deskripsi: string, deskripsiEn?: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadData();
@@ -21,8 +27,8 @@ export default function PengaturanCpmkPage() {
     try {
       const data = await getMataKuliahWithCpmk();
       setMataKuliah(data);
-    } catch (error) {
-      console.error(error);
+    } catch {
+      console.error("Gagal memuat data MK");
     } finally {
       setIsLoading(false);
     }
@@ -33,7 +39,8 @@ export default function PengaturanCpmkPage() {
     if (selectedMk) {
       const mk = mataKuliah.find(m => m.id === selectedMk);
       if (mk && mk.cpmk) {
-        setCpmks(mk.cpmk.map((c: any) => ({
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setCpmks(mk.cpmk.map((c: CpmkData) => ({
           id: c.id || Math.random().toString(),
           kode: c.kode,
           deskripsi: c.deskripsi,
@@ -75,24 +82,73 @@ export default function PengaturanCpmkPage() {
     setIsSaving(true);
     setMessage(null);
     try {
-      const res = await saveCpmkSetting(selectedMk, cpmks);
+      const res = await saveCpmkSetting(selectedMk, cpmks.map(c => ({...c, deskripsiEn: c.deskripsiEn || undefined})));
       if (res.success) {
         setMessage({ type: 'success', text: 'Pengaturan CPMK berhasil disimpan!' });
         await loadData(); // reload
       } else {
         setMessage({ type: 'error', text: res.error || 'Terjadi kesalahan' });
       }
-    } catch (e) {
+    } catch {
       setMessage({ type: 'error', text: 'Gagal menghubungi server' });
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setMessage(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await importCpmkCplExcel(formData);
+      if (res.success) {
+        setMessage({ type: 'success', text: res.message || 'Berhasil mengimpor data.' });
+        await loadData();
+      } else {
+        setMessage({ type: 'error', text: res.error || 'Gagal mengimpor data.' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Gagal menghubungi server.' });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">Pengaturan CPMK</h1>
-      <p className="text-gray-500">Atur Capaian Pembelajaran Mata Kuliah (CPMK) untuk masing-masing Mata Kuliah.</p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Pengaturan CPMK</h1>
+          <p className="text-gray-500">Atur Capaian Pembelajaran Mata Kuliah (CPMK) secara manual atau import massal via Excel.</p>
+        </div>
+        <div>
+          <input 
+            type="file" 
+            accept=".xlsx" 
+            className="hidden" 
+            ref={fileInputRef}
+            onChange={handleUpload}
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 font-medium transition-colors"
+          >
+            {isUploading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Upload className="w-5 h-5 mr-2" />}
+            {isUploading ? 'Mengimpor...' : 'Import Excel Narasi'}
+          </button>
+        </div>
+      </div>
 
       {message && (
         <div className={`p-4 rounded-lg flex items-center border ${message.type === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
@@ -137,7 +193,7 @@ export default function PengaturanCpmkPage() {
           </div>
           
           <div className="p-6 space-y-4">
-            {cpmks.map((cpmk, index) => (
+            {cpmks.map((cpmk) => (
               <div key={cpmk.id} className="flex space-x-4 items-start bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <div className="w-32">
                   <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Kode</label>

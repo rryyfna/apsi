@@ -21,6 +21,7 @@ model User {
   password  String
   name      String
   role      Role
+  isApproved Boolean @default(true) // Untuk fitur registrasi mandiri
   createdAt DateTime @default(now())
   
   mahasiswa Mahasiswa?
@@ -34,11 +35,13 @@ model Mahasiswa {
   userId       String @unique
   nim          String @unique
   name         String
+  angkatan     String? // Diekstrak dari NIM misal I0321002 -> 2021
   fakultas     String?
   programStudi String?
   user         User   @relation(fields: [userId], references: [id])
   
   enrollments  Enrollment[]
+  presensi     PresensiRecord[]
 }
 
 model Dosen {
@@ -76,6 +79,7 @@ model Kelas {
   mataKuliahId         String
   dosenId              String
   namaKelas            String // A, B, C, dsb
+  tahunAkademik        String? // Contoh: "2023/2024 Ganjil"
   kuotaReguler         Int    @default(0)
   jumlahAmbilReguler   Int    @default(0)
   
@@ -89,6 +93,7 @@ model Kelas {
   dosen                Dosen      @relation(fields: [dosenId], references: [id])
   enrollments          Enrollment[]
   cpmkKolomNilai       KelasCpmkKolomNilai[]
+  presensi             Presensi[]
 
   updatedAt            DateTime @default(now()) @updatedAt
   updatedBy            String?
@@ -227,4 +232,35 @@ model CpmkCplMapping {
   cpl     CPL    @relation(fields: [cplId], references: [id], onDelete: Cascade)
   
   @@unique([cpmkId, cplId])
+}
+
+enum Kehadiran {
+  HADIR
+  ALPA
+  SAKIT
+  IZIN
+}
+
+model Presensi {
+  id          String   @id @default(cuid())
+  kelasId     String
+  pertemuanKe Int
+  tanggal     DateTime
+  
+  kelas       Kelas    @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  records     PresensiRecord[]
+  
+  @@unique([kelasId, pertemuanKe])
+}
+
+model PresensiRecord {
+  id          String    @id @default(cuid())
+  presensiId  String
+  mahasiswaId String
+  status      Kehadiran @default(ALPA)
+  
+  presensi    Presensi  @relation(fields: [presensiId], references: [id], onDelete: Cascade)
+  mahasiswa   Mahasiswa @relation(fields: [mahasiswaId], references: [id], onDelete: Cascade)
+  
+  @@unique([presensiId, mahasiswaId])
 }

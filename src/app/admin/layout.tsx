@@ -15,8 +15,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const navItems = [
     { label: 'Beranda', href: '/admin', icon: <Home className="w-5 h-5" /> },
     { label: 'Master Data', href: '/admin/master', icon: <Database className="w-5 h-5" /> },
+    { label: 'Master Data (Manual)', href: '/admin/master/add', icon: <Database className="w-5 h-5" /> },
     { label: 'Penilaian Khusus', href: '/admin/penilaian-khusus', icon: <FileSpreadsheet className="w-5 h-5" /> },
+    { label: 'Override Nilai', href: '/admin/override', icon: <FileSpreadsheet className="w-5 h-5" /> },
     { label: 'Monitoring CPL', href: '/admin/cpl', icon: <Target className="w-5 h-5" /> },
+    { label: 'Persetujuan User', href: '/admin/approval', icon: <Settings className="w-5 h-5" /> },
   ];
 
   return (

@@ -19,7 +19,7 @@ export async function middleware(request: NextRequest) {
         if (payload.role === 'ADMIN') return NextResponse.redirect(new URL('/admin', request.url));
         if (payload.role === 'KAPRODI') return NextResponse.redirect(new URL('/kaprodi', request.url));
         if (payload.role === 'MUTU') return NextResponse.redirect(new URL('/mutu', request.url));
-      } catch (e) {
+      } catch {
         // Token tidak valid, biarkan di halaman login
       }
     }
@@ -62,7 +62,7 @@ export async function middleware(request: NextRequest) {
           headers: requestHeaders,
         }
       });
-    } catch (e) {
+    } catch {
       return NextResponse.redirect(new URL('/', request.url));
     }
   }

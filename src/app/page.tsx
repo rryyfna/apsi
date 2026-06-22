@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Home() {
   return (
@@ -17,7 +18,7 @@ export default function Home() {
       <header className="w-full bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50 transition-all">
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl flex items-center justify-between h-20">
           <Link href="/">
-            <img src="/siakad-logo.png" alt="SIAKAD Logo" className="h-14 object-contain" />
+            <Image src="/siakad-logo.png" alt="SIAKAD Logo" width={200} height={56} className="h-14 w-auto object-contain" />
           </Link>
           <div className="hidden md:flex space-x-4">
             <Link href="/" className="text-gray-700 font-semibold text-sm hover:text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50/50 transition-colors">Beranda</Link>
@@ -44,6 +45,11 @@ export default function Home() {
             <Link href="/login/dosen" className="px-8 py-3 bg-white text-blue-700 border border-blue-600 font-semibold rounded-lg shadow-sm hover:bg-blue-50 transition-all">
               Login Dosen
             </Link>
+          </div>
+          <div className="mt-6">
+            <p className="text-gray-500 text-sm">
+              Pengguna baru? <Link href="/register" className="text-blue-600 hover:underline font-semibold">Daftar Akun</Link>
+            </p>
           </div>
         </div>
       </main>

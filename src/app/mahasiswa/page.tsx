@@ -65,7 +65,7 @@ export default async function MahasiswaDashboard() {
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500">Semester</p>
-            <p className="text-2xl font-bold text-gray-800">Ganjil 2024</p>
+            <p className="text-2xl font-bold text-gray-800">Semester Aktif</p>
           </div>
         </div>
       </div>

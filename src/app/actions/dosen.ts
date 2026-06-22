@@ -9,7 +9,7 @@ async function getUserId() {
   return headersList.get('x-user-id');
 }
 
-export async function getDosenDashboardData() {
+export async function getDosenDashboardData(semesterFilter?: number) {
   const userId = await getUserId();
   if (!userId) redirect('/');
 
@@ -17,6 +17,7 @@ export async function getDosenDashboardData() {
     where: { userId },
     include: {
       kelas: {
+        where: semesterFilter ? { mataKuliah: { semester: semesterFilter } } : undefined,
         include: {
           mataKuliah: true,
           _count: {

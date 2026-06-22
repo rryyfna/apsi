@@ -1,30 +1,36 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react';
+import { Search, ArrowUpRight, ArrowDownRight, Loader2 } from 'lucide-react';
 import PrintPDFButton from '@/app/components/PrintPDFButton';
 import { getMonitoringCpl } from '@/app/actions/kaprodi';
 
+interface StudentData {
+  id: string;
+  nim: string;
+  name: string;
+  cplScores: Record<string, number>;
+}
+
 export default function MutuMonitoringPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents] = useState<StudentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        const data = await getMonitoringCpl();
+        setStudents(data as StudentData[]);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    }
     loadData();
   }, []);
-
-  async function loadData() {
-    setIsLoading(true);
-    try {
-      const data = await getMonitoringCpl();
-      setStudents(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
-  }
 
   const filteredStudents = students.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
