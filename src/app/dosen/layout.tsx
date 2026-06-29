@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 import Sidebar from '@/app/components/Sidebar';
 import Topbar from '@/app/components/Topbar';
-import { Home, Users, FileEdit, Calendar } from 'lucide-react';
+import { Home, Users, FileEdit } from 'lucide-react';
 import { db } from '@/lib/db';
 
 export default async function DosenLayout({ children }: { children: React.ReactNode }) {
@@ -16,7 +16,6 @@ export default async function DosenLayout({ children }: { children: React.ReactN
   const navItems = [
     { label: 'Beranda', href: '/dosen', icon: <Home className="w-5 h-5" /> },
     { label: 'Input Nilai', href: '/dosen/nilai', icon: <FileEdit className="w-5 h-5" /> },
-    { label: 'Rekap Presensi', href: '/dosen/presensi', icon: <Calendar className="w-5 h-5" /> },
   ];
 
   return (

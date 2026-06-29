@@ -22,6 +22,7 @@ interface StudentData {
 
 export default function CPLMonitoringPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterAngkatan, setFilterAngkatan] = useState('all');
   const [students, setStudents] = useState<StudentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
@@ -41,10 +42,15 @@ export default function CPLMonitoringPage() {
     loadData();
   }, []);
 
-  const filteredStudents = students.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.nim.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  let filteredStudents = students.filter(s => {
+    const matchSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        s.nim.toLowerCase().includes(searchTerm.toLowerCase());
+    if (filterAngkatan === 'all') return matchSearch;
+    
+    // Asumsi NIM format: I0321 -> angkatan 2021
+    const angkatan = "20" + s.nim.substring(3, 5);
+    return matchSearch && angkatan === filterAngkatan;
+  });
 
   const getStatusColor = (score: number) => {
     if (score >= 80) return 'text-green-600 bg-green-50 border-green-200';
@@ -62,7 +68,7 @@ export default function CPLMonitoringPage() {
   );
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto relative">
+    <div className="space-y-6 w-full mx-auto relative">
       
       {/* Modal Detail CPMK */}
       {selectedStudent && (
@@ -134,15 +140,29 @@ export default function CPLMonitoringPage() {
           <div className="flex items-center text-gray-700 font-semibold">
             <Target className="w-5 h-5 mr-2 text-blue-600" /> Matriks CPL Mahasiswa Aktif
           </div>
-          <div className="relative w-full sm:w-64 print:hidden">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Cari NIM atau Nama..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500" 
-            />
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto print:hidden">
+            <select
+              value={filterAngkatan}
+              onChange={(e) => setFilterAngkatan(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 bg-white text-gray-700"
+            >
+              <option value="all">Semua Angkatan</option>
+              <option value="2025">Angkatan 2025</option>
+              <option value="2024">Angkatan 2024</option>
+              <option value="2023">Angkatan 2023</option>
+              <option value="2022">Angkatan 2022</option>
+              <option value="2021">Angkatan 2021</option>
+            </select>
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Cari NIM atau Nama..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
           </div>
         </div>
 
@@ -153,10 +173,10 @@ export default function CPLMonitoringPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIM</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">Nama Mahasiswa</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIM</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Mahasiswa</th>
                   {sortedCplColumns.map(cpl => (
-                    <th key={`th-${cpl}`} className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                    <th key={`th-${cpl}`} className="px-2 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                       {cpl}
                     </th>
                   ))}
@@ -165,9 +185,9 @@ export default function CPLMonitoringPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredStudents.map((m) => (
                   <tr key={m.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{m.nim}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{m.nim}</td>
                     <td 
-                      className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:text-blue-800 font-semibold cursor-pointer transition-colors"
+                      className="px-4 py-4 whitespace-nowrap text-sm text-blue-600 hover:text-blue-800 font-semibold cursor-pointer transition-colors"
                       onClick={() => setSelectedStudent(m)}
                       title="Klik untuk melihat detail CPMK yang belum terpenuhi"
                     >
@@ -177,7 +197,7 @@ export default function CPLMonitoringPage() {
                     {sortedCplColumns.map(cpl => {
                       const score = m.cplScores[cpl] || 0;
                       return (
-                        <td key={`td-${m.id}-${cpl}`} className="px-6 py-4 whitespace-nowrap text-center">
+                        <td key={`td-${m.id}-${cpl}`} className="px-2 py-4 whitespace-nowrap text-center">
                           <span className={`px-2 py-1 inline-flex text-xs leading-5 font-bold rounded-full border ${getStatusColor(score)}`}>
                             {score}%
                           </span>

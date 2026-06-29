@@ -1,21 +1,16 @@
 import { getDosenDashboardData } from '@/app/actions/dosen';
-import { Users, BookOpen, PieChart as PieChartIcon } from 'lucide-react';
-import GradeDistributionChart from '@/app/components/mahasiswa/GradeDistributionChart';
+import { Users, BookOpen } from 'lucide-react';
+import SebaranNilaiDosen from '@/app/components/dosen/SebaranNilaiDosen';
 
-import SemesterFilter from '@/app/components/SemesterFilter';
+export const dynamic = 'force-dynamic';
 
-export default async function DosenDashboard({ searchParams }: { searchParams: Promise<{ semester?: string }> }) {
-  const resolvedParams = await searchParams;
-  const semesterFilter = resolvedParams?.semester ? parseInt(resolvedParams.semester) : undefined;
-  const data = await getDosenDashboardData(semesterFilter);
+export default async function DosenDashboard() {
+  const data = await getDosenDashboardData();
   
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-800">Dashboard Dosen</h1>
-        <div className="flex items-center space-x-3">
-          <SemesterFilter />
-        </div>
       </div>
       
       {/* Profil Singkat */}
@@ -56,13 +51,10 @@ export default async function DosenDashboard({ searchParams }: { searchParams: P
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Distribusi Nilai (Pie Chart) */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-1">
-          <div className="flex items-center mb-4">
-            <PieChartIcon className="w-5 h-5 text-gray-500 mr-2" />
-            <h3 className="text-lg font-bold text-gray-800">Sebaran Nilai</h3>
-          </div>
-          <GradeDistributionChart data={data.gradeDistribution} />
-        </div>
+        <SebaranNilaiDosen 
+          gradeDistributionByMk={data.gradeDistributionByMk} 
+          defaultDistribution={data.gradeDistribution} 
+        />
 
         {/* Daftar Kelas */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">

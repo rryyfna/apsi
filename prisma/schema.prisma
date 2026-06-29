@@ -124,6 +124,7 @@ model Enrollment {
   nonTeachingTemplateId String?
   nonTeachingTemplate   NonTeachingGradeTemplate? @relation(fields: [nonTeachingTemplateId], references: [id])
   nonTeachingScores     NonTeachingGradeScore[]
+  kolomNilaiScores      KelasCpmkKolomNilaiScore[]
   
   @@unique([mahasiswaId, kelasId])
 }
@@ -213,13 +214,26 @@ model KelasCpmkKolomNilai {
   id        String @id @default(cuid())
   kelasId   String
   cpmkId    String
-  namaKolom String // "TUGAS", "UTS", "UAS", "PARTISIPASI", "PROYEK"
+  namaKolom String // e.g. "Tugas 1", "UTS", "Praktek"
   bobot     Float  // Percentage, e.g., 40 for 40%
   
   kelas     Kelas  @relation(fields: [kelasId], references: [id], onDelete: Cascade)
   cpmk      CPMK   @relation(fields: [cpmkId], references: [id], onDelete: Cascade)
+  scores    KelasCpmkKolomNilaiScore[]
   
-  @@unique([kelasId, cpmkId, namaKolom])
+  @@unique([kelasId, namaKolom]) // Nama kolom harus unik per kelas
+}
+
+model KelasCpmkKolomNilaiScore {
+  id                    String @id @default(cuid())
+  enrollmentId          String
+  kelasCpmkKolomNilaiId String
+  nilai                 Float
+  
+  enrollment          Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  kelasCpmkKolomNilai KelasCpmkKolomNilai @relation(fields: [kelasCpmkKolomNilaiId], references: [id], onDelete: Cascade)
+  
+  @@unique([enrollmentId, kelasCpmkKolomNilaiId])
 }
 
 model CpmkCplMapping {

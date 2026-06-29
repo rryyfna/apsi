@@ -9,7 +9,7 @@ async function getUserId() {
   return headersList.get('x-user-id');
 }
 
-export async function getDosenDashboardData(semesterFilter?: number) {
+export async function getDosenDashboardData() {
   const userId = await getUserId();
   if (!userId) redirect('/');
 
@@ -17,7 +17,6 @@ export async function getDosenDashboardData(semesterFilter?: number) {
     where: { userId },
     include: {
       kelas: {
-        where: semesterFilter ? { mataKuliah: { semester: semesterFilter } } : undefined,
         include: {
           mataKuliah: true,
           _count: {
@@ -50,6 +49,30 @@ export async function getDosenDashboardData(semesterFilter?: number) {
     count: gradeCount[grade]
   })).sort((a, b) => a.grade.localeCompare(b.grade));
 
+  const mkMap = new Map<string, { id: string, namaMk: string, gradeCount: Record<string, number> }>();
+  dosen.kelas.forEach((k: any) => {
+    const mk = k.mataKuliah;
+    if (!mkMap.has(mk.kodeMk)) {
+      mkMap.set(mk.kodeMk, { id: mk.kodeMk, namaMk: mk.namaMk, gradeCount: {} });
+    }
+    const mkData = mkMap.get(mk.kodeMk)!;
+
+    k.enrollments.forEach((en: any) => {
+      if (en.huruf) {
+        mkData.gradeCount[en.huruf] = (mkData.gradeCount[en.huruf] || 0) + 1;
+      }
+    });
+  });
+
+  const gradeDistributionByMk = Array.from(mkMap.values()).map(mk => ({
+    kodeMk: mk.id,
+    namaMk: mk.namaMk,
+    distribution: Object.keys(mk.gradeCount).map(grade => ({
+      grade,
+      count: mk.gradeCount[grade]
+    })).sort((a, b) => a.grade.localeCompare(b.grade))
+  }));
+
   return {
     profile: {
       nidn: dosen.nidn,
@@ -60,6 +83,7 @@ export async function getDosenDashboardData(semesterFilter?: number) {
       totalMahasiswaDiajar
     },
     gradeDistribution,
+    gradeDistributionByMk,
     kelas: dosen.kelas.map((k: any) => ({
       id: k.id,
       mataKuliah: k.mataKuliah.namaMk,
@@ -80,10 +104,14 @@ export async function getKelasWithEnrollments(kelasId: string) {
   const kelas = await db.kelas.findUnique({
     where: { id: kelasId },
     include: {
-      mataKuliah: true,
+      cpmkKolomNilai: { include: { cpmk: true } },
+      mataKuliah: {
+        include: { cpmk: true }
+      },
       enrollments: {
         include: {
-          mahasiswa: true
+          mahasiswa: true,
+          kolomNilaiScores: true
         }
       }
     }
@@ -99,29 +127,43 @@ export async function updateNilai(enrollmentId: string, data: any) {
   const userId = await getUserId();
   if (!userId) return { error: 'Unauthorized' };
 
-  // Hitung nilai akhir & huruf
-  const { nilaiTugas, nilaiUts, nilaiUas, nilaiPartisipasi, nilaiProyek } = data;
+  // data = { [kolomId]: nilai, ... }
+  // Namun, nilaiTotal, nilaiAkhir, huruf harus dihitung.
   
-  // Dapatkan bobot dari Kelas
   const enrollment = await db.enrollment.findUnique({
     where: { id: enrollmentId },
-    include: { kelas: true }
+    include: { 
+      kelas: {
+        include: { cpmkKolomNilai: true }
+      } 
+    }
   });
 
   if (!enrollment) return { error: 'Data tidak ditemukan' };
 
-  const wTugas = (enrollment.kelas.bobotTugas ?? 20) / 100;
-  const wUts = (enrollment.kelas.bobotUts ?? 30) / 100;
-  const wUas = (enrollment.kelas.bobotUas ?? 30) / 100;
-  const wPartisipasi = (enrollment.kelas.bobotPartisipasi ?? 10) / 100;
-  const wProyek = (enrollment.kelas.bobotProyek ?? 10) / 100;
-
+  const cpmkKolomNilai = enrollment.kelas.cpmkKolomNilai;
   let total = 0;
-  const t = parseFloat(nilaiTugas); if (!isNaN(t)) total += (t * wTugas);
-  const uts = parseFloat(nilaiUts); if (!isNaN(uts)) total += (uts * wUts);
-  const uas = parseFloat(nilaiUas); if (!isNaN(uas)) total += (uas * wUas);
-  const p = parseFloat(nilaiPartisipasi); if (!isNaN(p)) total += (p * wPartisipasi);
-  const pr = parseFloat(nilaiProyek); if (!isNaN(pr)) total += (pr * wProyek);
+
+  // Hapus semua score lama untuk enrollment ini
+  await db.kelasCpmkKolomNilaiScore.deleteMany({
+    where: { enrollmentId }
+  });
+
+  const newScores = [];
+
+  for (const k of cpmkKolomNilai) {
+    const rawVal = data[k.id];
+    const numVal = parseFloat(rawVal);
+    if (!isNaN(numVal)) {
+      const w = k.bobot / 100;
+      total += (numVal * w);
+      newScores.push({
+        enrollmentId,
+        kelasCpmkKolomNilaiId: k.id,
+        nilai: numVal
+      });
+    }
+  }
 
   let huruf = 'E';
   let skala4 = 0.0;
@@ -133,19 +175,17 @@ export async function updateNilai(enrollmentId: string, data: any) {
   else if (total >= 60) { huruf = 'C'; skala4 = 2.0; }
   else if (total >= 50) { huruf = 'D'; skala4 = 1.0; }
 
-  await db.enrollment.update({
-    where: { id: enrollmentId },
-    data: {
-      nilaiTugas: !isNaN(parseFloat(nilaiTugas)) ? parseFloat(nilaiTugas) : null,
-      nilaiUts: !isNaN(parseFloat(nilaiUts)) ? parseFloat(nilaiUts) : null,
-      nilaiUas: !isNaN(parseFloat(nilaiUas)) ? parseFloat(nilaiUas) : null,
-      nilaiPartisipasi: !isNaN(parseFloat(nilaiPartisipasi)) ? parseFloat(nilaiPartisipasi) : null,
-      nilaiProyek: !isNaN(parseFloat(nilaiProyek)) ? parseFloat(nilaiProyek) : null,
-      nilaiTotal: total,
-      nilaiAkhir: skala4,
-      huruf: huruf
-    }
-  });
+  await db.$transaction([
+    db.kelasCpmkKolomNilaiScore.createMany({ data: newScores }),
+    db.enrollment.update({
+      where: { id: enrollmentId },
+      data: {
+        nilaiTotal: total,
+        nilaiAkhir: skala4,
+        huruf: huruf
+      }
+    })
+  ]);
 
   return { success: true };
 }
@@ -170,7 +210,7 @@ export async function getPlottingCpmk(kelasId: string) {
   return kelas;
 }
 
-export async function savePlottingCpmk(kelasId: string, mapping: Record<string, Record<string, number>>) {
+export async function savePlottingCpmk(kelasId: string, mapping: { namaKolom: string, cpmkKode: string, bobot: number }[]) {
   const userId = await getUserId();
   if (!userId) return { error: 'Unauthorized' };
 
@@ -182,8 +222,6 @@ export async function savePlottingCpmk(kelasId: string, mapping: Record<string, 
     
     if (!kelas) return { error: 'Kelas tidak ditemukan' };
     
-    const cpmks = kelas.mataKuliah.cpmk;
-    
     // Hapus kolomNilai lama untuk kelas ini
     await db.kelasCpmkKolomNilai.deleteMany({
       where: { kelasId }
@@ -191,21 +229,33 @@ export async function savePlottingCpmk(kelasId: string, mapping: Record<string, 
 
     const newData: { kelasId: string, cpmkId: string, namaKolom: string, bobot: number }[] = [];
     
-    // Mapping format: mapping[colName][cpmkKode] = number
-    for (const colName of Object.keys(mapping)) {
-      for (const cpmkKode of Object.keys(mapping[colName])) {
-        const bobot = mapping[colName][cpmkKode];
-        if (bobot > 0) {
-          const cpmk = cpmks.find((c: any) => c.kode === cpmkKode);
-          if (cpmk) {
-            newData.push({
-              kelasId: kelasId,
-              cpmkId: cpmk.id,
-              namaKolom: colName,
-              bobot: bobot
-            });
+    for (const item of mapping) {
+      if (item.namaKolom && item.bobot > 0 && item.cpmkKode) {
+        const kode = item.cpmkKode.trim();
+        let cpmk = await db.cPMK.findFirst({
+          where: {
+            mataKuliahId: kelas.mataKuliahId,
+            kode: kode
           }
+        });
+
+        if (!cpmk) {
+          cpmk = await db.cPMK.create({
+            data: {
+              mataKuliahId: kelas.mataKuliahId,
+              kode: kode,
+              deskripsi: '-',
+              deskripsiEn: '-'
+            }
+          });
         }
+
+        newData.push({
+          kelasId: kelasId,
+          cpmkId: cpmk.id,
+          namaKolom: item.namaKolom.trim(),
+          bobot: item.bobot
+        });
       }
     }
 
@@ -245,6 +295,143 @@ export async function saveBobotKelas(kelasId: string, bobotData: { bobotTugas: n
   } catch (error) {
     console.error(error);
     return { error: 'Gagal menyimpan bobot kelas' };
+  }
+}
+
+export async function savePenugasan(kelasId: string, data: { nama: string, bobot: number, cpmkKode?: string }[]) {
+  const userId = await getUserId();
+  if (!userId) return { error: 'Unauthorized' };
+
+  try {
+    const totalBobot = data.reduce((acc, curr) => acc + curr.bobot, 0);
+    if (Math.round(totalBobot) !== 100 && data.length > 0) {
+      return { error: 'Total bobot penugasan harus 100%' };
+    }
+
+    const kelasInfo = await db.kelas.findUnique({
+      where: { id: kelasId },
+      select: { mataKuliahId: true }
+    });
+
+    if (!kelasInfo) return { error: 'Kelas tidak ditemukan' };
+
+    await db.$transaction(async (tx) => {
+      await tx.penugasan.deleteMany({ where: { kelasId } });
+      
+      if (data.length > 0) {
+        for (const p of data) {
+          let finalCpmkId = null;
+
+          if (p.cpmkKode && p.cpmkKode.trim() !== '') {
+            const kode = p.cpmkKode.trim();
+            // Cari CPMK berdasarkan kode dan mataKuliahId
+            let cpmk = await tx.cPMK.findFirst({
+              where: {
+                mataKuliahId: kelasInfo.mataKuliahId,
+                kode: kode
+              }
+            });
+
+            // Jika tidak ada, buat baru
+            if (!cpmk) {
+              cpmk = await tx.cPMK.create({
+                data: {
+                  mataKuliahId: kelasInfo.mataKuliahId,
+                  kode: kode,
+                  deskripsi: '-',
+                  deskripsiEn: '-'
+                }
+              });
+            }
+            finalCpmkId = cpmk.id;
+          }
+
+          await tx.penugasan.create({
+            data: {
+              kelasId,
+              nama: p.nama,
+              bobot: p.bobot,
+              cpmkId: finalCpmkId
+            }
+          });
+        }
+      }
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: 'Gagal menyimpan penugasan' };
+  }
+}
+
+export async function updatePenugasanNilai(enrollmentId: string, scores: { penugasanId: string, nilai: number }[]) {
+  const userId = await getUserId();
+  if (!userId) return { error: 'Unauthorized' };
+
+  try {
+    // Upsert scores
+    for (const score of scores) {
+      if (!isNaN(score.nilai)) {
+        await db.penugasanScore.upsert({
+          where: {
+            penugasanId_enrollmentId: {
+              penugasanId: score.penugasanId,
+              enrollmentId: enrollmentId
+            }
+          },
+          create: {
+            penugasanId: score.penugasanId,
+            enrollmentId: enrollmentId,
+            nilai: score.nilai
+          },
+          update: {
+            nilai: score.nilai
+          }
+        });
+      }
+    }
+
+    // Recalculate total and huruf
+    const enrollment = await db.enrollment.findUnique({
+      where: { id: enrollmentId },
+      include: { 
+        penugasanScores: {
+          include: { penugasan: true }
+        }
+      }
+    });
+
+    if (enrollment) {
+      let total = 0;
+      for (const ps of enrollment.penugasanScores) {
+        total += ps.nilai * (ps.penugasan.bobot / 100);
+      }
+
+      let huruf = 'E';
+      let skala4 = 0.0;
+      if (total >= 85) { huruf = 'A'; skala4 = 4.0; }
+      else if (total >= 80) { huruf = 'A-'; skala4 = 3.7; }
+      else if (total >= 75) { huruf = 'B+'; skala4 = 3.3; }
+      else if (total >= 70) { huruf = 'B'; skala4 = 3.0; }
+      else if (total >= 65) { huruf = 'C+'; skala4 = 2.7; }
+      else if (total >= 60) { huruf = 'C'; skala4 = 2.0; }
+      else if (total >= 50) { huruf = 'D'; skala4 = 1.0; }
+
+      await db.enrollment.update({
+        where: { id: enrollmentId },
+        data: {
+          nilaiTotal: total,
+          nilaiAkhir: skala4,
+          huruf: huruf
+        }
+      });
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: 'Gagal menyimpan nilai penugasan' };
   }
 }
 

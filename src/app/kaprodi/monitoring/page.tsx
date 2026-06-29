@@ -297,17 +297,17 @@ export default function MonitoringCplPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">NIM</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nama Mahasiswa</th>
+                  <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nama Mahasiswa</th>
                   {finalCplColumns.map(cpl => (
-                    <th key={`th-${cpl}`} className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">{cpl}</th>
+                    <th key={`th-${cpl}`} className="px-2 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">{cpl}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredStudents.map((student) => (
                   <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{student.nim}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{student.nim}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm">
                       <button 
                         onClick={() => setSelectedStudent(student)}
                         className="text-blue-600 hover:text-blue-800 font-medium hover:underline focus:outline-none text-left"
@@ -319,7 +319,7 @@ export default function MonitoringCplPage() {
                     {finalCplColumns.map(cpl => {
                       const score = student.cplScores[cpl] || 0;
                       return (
-                        <td key={`td-${student.id}-${cpl}`} className="px-6 py-4 whitespace-nowrap text-center">
+                        <td key={`td-${student.id}-${cpl}`} className="px-2 py-4 whitespace-nowrap text-center">
                           <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full border ${getStatusColor(score)}`}>
                             {score}
                           </span>

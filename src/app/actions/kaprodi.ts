@@ -182,25 +182,56 @@ export async function getMonitoringCpl(filters?: { angkatan?: string, semester?:
     for (let i = 1; i <= 10; i++) {
       const cplKey = `CPL-${i}`;
       if (mhs.nim.startsWith('I0321')) {
-        finalScores[cplKey] = Math.floor(Math.random() * 15) + 85; // 85-99
+        finalScores[cplKey] = Math.floor(Math.random() * 10) + 90; // 90-99 (Hampir lulus semua)
       } else if (mhs.nim.startsWith('I0322')) {
-        finalScores[cplKey] = Math.floor(Math.random() * 20) + 80; // 80-99
+        finalScores[cplKey] = Math.floor(Math.random() * 15) + 85; // 85-99 (Semester akhir)
+      } else if (mhs.nim.startsWith('I0323')) {
+        finalScores[cplKey] = Math.floor(Math.random() * 20) + 80; // 80-99 (Sem 7, wajib selesai)
+      } else if (mhs.nim.startsWith('I0324')) {
+        finalScores[cplKey] = Math.floor(Math.random() * 25) + 60; // 60-84 (Sem 5, masih pertengahan)
+      } else if (mhs.nim.startsWith('I0325')) {
+        finalScores[cplKey] = Math.floor(Math.random() * 30) + 45; // 45-74 (Sem 3, baru mulai, banyak merah)
       } else if (!finalScores[cplKey]) {
-        finalScores[cplKey] = Math.floor(Math.random() * 40) + 60; // 60-99
+        finalScores[cplKey] = Math.floor(Math.random() * 40) + 60; // Default
       }
 
       // Generate dummy cpmkDetails for scores that are not perfectly green (< 80)
       if (finalScores[cplKey] < 80) {
         // Find if already has real cpmk
-        const hasRealCpmk = mhs.cpmkDetails.some((d: any) => d.cpmkKode.includes(i.toString()));
+        const hasRealCpmk = mhs.cpmkDetails.some((d: any) => d.cpmkKode.startsWith(`CPMK-${i}`));
         if (!hasRealCpmk) {
-          mhs.cpmkDetails.push({
-            cpmkKode: `CPMK-${i}`,
-            cpmkNama: `Pemahaman dan penerapan materi untuk ${cplKey}`,
-            matkul: `Mata Kuliah Wajib ${i}`,
-            score: finalScores[cplKey],
-            isFulfilled: finalScores[cplKey] >= 80
-          });
+          const numCpmk = Math.floor(Math.random() * 3) + 1; // 1 to 3 CPMKs per CPL
+          const dummyMatkuls = [
+            'Matematika Optimasi', 'Sistem Produksi', 'Perancangan Tata Letak Pabrik', 
+            'Manajemen Kualitas', 'Ergonomi Industri', 'Simulasi Sistem', 
+            'Ekonomi Teknik', 'Kesehatan dan Keselamatan Kerja', 'Pemodelan Sistem', 
+            'Manajemen Rantai Pasok', 'Sistem Enterprise (Pilihan)', 
+            'Data Mining Terapan (Pilihan)', 'Otomasi Industri (Pilihan)'
+          ];
+          const dummyDeskripsi = [
+            `Mampu mengaplikasikan prinsip dasar dan metode analisis untuk menyelesaikan kasus ${cplKey}`,
+            `Mahasiswa dapat mengidentifikasi masalah rekayasa sistem terintegrasi pada lingkup ${cplKey}`,
+            `Mampu merancang komponen atau sistem yang berhubungan dengan target capaian ${cplKey}`,
+            `Memiliki keterampilan dalam merumuskan solusi alternatif berdasarkan teori pada ${cplKey}`,
+            `Mampu menggunakan perangkat lunak (software) modern untuk menganalisis data terkait ${cplKey}`,
+            `Mampu mengevaluasi dampak teknis dan manajerial dari implementasi studi ${cplKey}`,
+            `Mampu melakukan presentasi lisan dan tulisan mengenai laporan proyek ${cplKey}`
+          ];
+          
+          for (let j = 1; j <= numCpmk; j++) {
+            const randomMatkul = dummyMatkuls[Math.floor(Math.random() * dummyMatkuls.length)];
+            const randomDeskripsi = dummyDeskripsi[Math.floor(Math.random() * dummyDeskripsi.length)];
+            const cpmkScoreOffset = Math.floor(Math.random() * 10) - 5; // -5 to +5 variance
+            const cpmkScore = Math.max(0, Math.min(100, finalScores[cplKey] + cpmkScoreOffset));
+            
+            mhs.cpmkDetails.push({
+              cpmkKode: `CPMK-${i}.${j}`,
+              cpmkNama: randomDeskripsi,
+              matkul: randomMatkul,
+              score: cpmkScore,
+              isFulfilled: cpmkScore >= 80
+            });
+          }
         }
       }
     }

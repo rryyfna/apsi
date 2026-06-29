@@ -21,16 +21,24 @@ export async function importGradesFromExcel(kelasId: string, payload: { students
     const { students } = payload;
     
     // Ambil bobot kelas yang sudah ada di database, jangan overwrite dari Excel.
-    const kelas = await db.kelas.findUnique({ where: { id: kelasId } });
+    const kelas = await db.kelas.findUnique({ 
+      where: { id: kelasId },
+      include: { cpmkKolomNilai: true } 
+    });
     if (!kelas) {
       return { success: false, message: 'Kelas tidak ditemukan.' };
     }
 
-    const wTugas = (kelas.bobotTugas ?? 20) / 100;
-    const wUts = (kelas.bobotUts ?? 30) / 100;
-    const wUas = (kelas.bobotUas ?? 30) / 100;
-    const wPartisipasi = (kelas.bobotPartisipasi ?? 10) / 100;
-    const wProyek = (kelas.bobotProyek ?? 10) / 100;
+    const getBobot = (namaKolom: string) => {
+      const k = kelas.cpmkKolomNilai.find(k => k.namaKolom.toLowerCase() === namaKolom.toLowerCase());
+      return k ? k.bobot / 100 : 0;
+    };
+
+    const wTugas = getBobot('Tugas');
+    const wUts = getBobot('UTS');
+    const wUas = getBobot('UAS');
+    const wPartisipasi = getBobot('Partisipasi');
+    const wProyek = getBobot('Proyek');
 
     // Overwrite: hapus semua data nilai/enrollment lama di kelas ini sebelum memasukkan yang baru
     await db.enrollment.deleteMany({

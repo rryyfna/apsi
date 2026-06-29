@@ -14,6 +14,7 @@ interface StudentData {
 
 export default function MutuMonitoringPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterAngkatan, setFilterAngkatan] = useState('all');
   const [students, setStudents] = useState<StudentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -32,10 +33,15 @@ export default function MutuMonitoringPage() {
     loadData();
   }, []);
 
-  const filteredStudents = students.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.nim.includes(searchTerm)
-  );
+  let filteredStudents = students.filter(s => {
+    const matchSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        s.nim.includes(searchTerm);
+    if (filterAngkatan === 'all') return matchSearch;
+    
+    // Asumsi NIM format: I0321 -> angkatan 2021
+    const angkatan = "20" + s.nim.substring(3, 5);
+    return matchSearch && angkatan === filterAngkatan;
+  });
 
   const calculateProdiAverage = (cpl: string) => {
     if (students.length === 0) return "0";
@@ -92,15 +98,29 @@ export default function MutuMonitoringPage() {
 
       <div id="cpl-monitoring-mutu" className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input 
-              type="text" 
-              placeholder="Cari NIM atau Nama..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-            />
+          <div className="flex flex-col sm:flex-row w-full gap-4">
+            <select
+              value={filterAngkatan}
+              onChange={(e) => setFilterAngkatan(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white text-gray-700 w-full sm:w-auto"
+            >
+              <option value="all">Semua Angkatan</option>
+              <option value="2025">Angkatan 2025</option>
+              <option value="2024">Angkatan 2024</option>
+              <option value="2023">Angkatan 2023</option>
+              <option value="2022">Angkatan 2022</option>
+              <option value="2021">Angkatan 2021</option>
+            </select>
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input 
+                type="text" 
+                placeholder="Cari NIM atau Nama..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              />
+            </div>
           </div>
         </div>
 
@@ -111,23 +131,23 @@ export default function MutuMonitoringPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">NIM</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nama Mahasiswa</th>
+                  <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">NIM</th>
+                  <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nama Mahasiswa</th>
                   {sortedCplColumns.map(cpl => (
-                    <th key={`th-${cpl}`} className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">{cpl}</th>
+                    <th key={`th-${cpl}`} className="px-2 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">{cpl}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredStudents.map((student) => (
                   <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{student.nim}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{student.name}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{student.nim}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">{student.name}</td>
                     
                     {sortedCplColumns.map(cpl => {
                       const score = student.cplScores[cpl] || 0;
                       return (
-                        <td key={`td-${student.id}-${cpl}`} className="px-6 py-4 whitespace-nowrap text-center">
+                        <td key={`td-${student.id}-${cpl}`} className="px-2 py-4 whitespace-nowrap text-center">
                           <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full border ${getStatusColor(score)}`}>
                             {score}
                           </span>
