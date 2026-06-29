@@ -6,7 +6,7 @@ import Link from 'next/link';
 export default async function DosenPresensiPage({ searchParams }: { searchParams: Promise<{ semester?: string }> }) {
   const resolvedParams = await searchParams;
   const semesterFilter = resolvedParams?.semester ? parseInt(resolvedParams.semester) : undefined;
-  const data = await getDosenDashboardData(semesterFilter);
+  const data = await getDosenDashboardData();
   
   return (
     <div className="space-y-6">

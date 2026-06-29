@@ -12,8 +12,8 @@ export async function GET(req: NextRequest) {
 
   const headerStyle = {
     font: { bold: true, color: { argb: 'FFFFFFFF' } },
-    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF004E98' } },
-    alignment: { vertical: 'middle', horizontal: 'center' as const },
+    fill: { type: 'pattern' as any, pattern: 'solid' as any, fgColor: { argb: 'FF004E98' } },
+    alignment: { vertical: 'middle' as any, horizontal: 'center' as const },
     border: {
       top: { style: 'thin' as const }, left: { style: 'thin' as const },
       bottom: { style: 'thin' as const }, right: { style: 'thin' as const }
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   };
 
   const dataStyle = {
-    alignment: { vertical: 'middle', wrapText: true },
+    alignment: { vertical: 'middle' as any, wrapText: true },
     border: {
       top: { style: 'thin' as const, color: { argb: 'FFDDDDDD' } }, left: { style: 'thin' as const, color: { argb: 'FFDDDDDD' } },
       bottom: { style: 'thin' as const, color: { argb: 'FFDDDDDD' } }, right: { style: 'thin' as const, color: { argb: 'FFDDDDDD' } }

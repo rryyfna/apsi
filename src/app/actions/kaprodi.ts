@@ -136,7 +136,7 @@ export async function getMonitoringCpl(filters?: { angkatan?: string, semester?:
 
       mhs.cpmkDetails.push({
         cpmkKode: cpmk.kode,
-        cpmkNama: cpmk.nama,
+        cpmkNama: cpmk.deskripsi,
         matkul: en.kelas.mataKuliah.namaMk,
         score: Math.round(score),
         isFulfilled: score >= 60

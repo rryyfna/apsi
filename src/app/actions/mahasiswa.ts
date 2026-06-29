@@ -292,9 +292,9 @@ export async function getStudentCplReport() {
   const studentCplScores = new Map<string, { total: number, count: number }>();
 
   enrollments.forEach(enrollment => {
-    const scores = typeof enrollment.cpmkScores === 'string' 
-      ? JSON.parse(enrollment.cpmkScores || '{}') 
-      : (enrollment.cpmkScores || {});
+    const scores = typeof (enrollment as any).cpmkScores === 'string' 
+      ? JSON.parse((enrollment as any).cpmkScores || '{}') 
+      : ((enrollment as any).cpmkScores || {});
 
     const classCplScores = new Map<string, { total: number, count: number }>();
 
@@ -328,7 +328,7 @@ export async function getStudentCplReport() {
     const score = data && data.count > 0 ? Math.round(data.total / data.count) : 0;
     return {
       kode: cpl.kode,
-      nama: cpl.nama,
+      nama: cpl.deskripsi,
       score: score,
       isPassed: score >= 60 // Threshold 60%
     };

@@ -138,15 +138,17 @@ export default function MonitoringCplPage() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value: number) => [value, 'Skor']} />
+                      <Tooltip formatter={(value: any) => [value, 'Skor']} />
                       <Legend 
                         wrapperStyle={{ fontSize: '11px', paddingTop: '20px' }}
-                        payload={finalCplColumns.map((cpl, i) => ({
-                          id: cpl,
-                          type: 'square',
-                          value: cpl,
-                          color: COLORS[i % COLORS.length]
-                        }))}
+                        {...({
+                          payload: pieDataFinal.map((item) => ({
+                            id: item.name,
+                            type: 'square',
+                            value: item.name,
+                            color: item.fill
+                          }))
+                        } as any)}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -271,15 +273,17 @@ export default function MonitoringCplPage() {
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => [`${value.toFixed(1)}`, 'Rata-rata']} />
+                  <Tooltip formatter={(value: any) => [`${value.toFixed(1)}`, 'Rata-rata']} />
                   <Legend 
-                    wrapperStyle={{ fontSize: '11px', paddingTop: '20px' }} 
-                    payload={pieDataFinal.map((item) => ({
-                      id: item.name,
-                      type: 'square',
-                      value: item.name,
-                      color: item.fill
-                    }))}
+                    wrapperStyle={{ fontSize: '11px', paddingTop: '20px' }}
+                    {...({
+                      payload: pieDataFinal.map((item) => ({
+                        id: item.name,
+                        type: 'square',
+                        value: item.name,
+                        color: item.fill
+                      }))
+                    } as any)}
                   />
                 </PieChart>
               </ResponsiveContainer>
